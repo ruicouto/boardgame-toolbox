@@ -1,528 +1,571 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { 
-  Dices, 
-  Hand, 
-  TableProperties, 
-  Plus, 
-  Trash2, 
-  Settings, 
-  RotateCcw, 
-  ChevronLeft, 
-  Trophy, 
-  User,
-  Palette,
-  Check,
-  Moon,
-  Sun,
-  Rows,
-  Sparkles
-} from 'lucide-react';
-
-// --- THEME DEFINITIONS ---
-const THEMES = {
-  oled: { name: 'OLED Black', bg: 'bg-black', glass: 'bg-zinc-900/60', card: 'bg-zinc-900/40', border: 'border-zinc-800/50', text: 'text-zinc-100', subtext: 'text-zinc-500' },
-  dark: { name: 'Midnight', bg: 'bg-slate-950', glass: 'bg-slate-900/60', card: 'bg-slate-900/40', border: 'border-slate-800/50', text: 'text-slate-100', subtext: 'text-slate-500' },
-  nordic: { name: 'Nordic', bg: 'bg-[#2e3440]', glass: 'bg-[#3b4252]/60', card: 'bg-[#3b4252]/40', border: 'border-[#4c566a]/50', text: 'text-[#eceff4]', subtext: 'text-[#9ca3af]' },
-  sunset: { name: 'Sunset', bg: 'bg-[#1a1625]', glass: 'bg-[#2d2438]/60', card: 'bg-[#2d2438]/40', border: 'border-[#433654]/50', text: 'text-[#f3f1f5]', subtext: 'text-[#8e81a3]' },
-  light: { name: 'Paper', bg: 'bg-zinc-50', glass: 'bg-white/70', card: 'bg-white/40', border: 'border-zinc-200/50', text: 'text-zinc-900', subtext: 'text-zinc-400' }
-};
-
-const ACCENTS = {
-  indigo: { color: '#6366f1', glow: 'shadow-indigo-500/20' },
-  emerald: { color: '#10b981', glow: 'shadow-emerald-500/20' },
-  rose: { color: '#f43f5e', glow: 'shadow-rose-500/20' },
-  amber: { color: '#f59e0b', glow: 'shadow-amber-500/20' },
-  cyan: { color: '#06b6d4', glow: 'shadow-cyan-500/20' },
-};
-
-// --- UTILITIES ---
-const evaluateMath = (input) => {
-  if (!input) return '';
-  const str = input.toString();
-  if (/^-?\d*\.?\d+$/.test(str)) return str;
-  try {
-    const sanitized = str.replace(/[^0-9+\-*/.]/g, '');
-    if (!sanitized) return '';
-    const result = new Function(`return ${sanitized}`)();
-    return Number.isFinite(result) ? Math.round(result * 100) / 100 : str;
-  } catch (e) { return str; }
-};
-
-const triggerHaptic = (pattern = 50) => {
-  if (typeof navigator !== 'undefined' && navigator.vibrate) {
-    navigator.vibrate(pattern);
-  }
-};
-
-function useLocalStorage(key, initialValue) {
-  const [storedValue, setStoredValue] = useState(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) { return initialValue; }
-  });
-  const setValue = (value) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
-    } catch (error) {}
-  };
-  return [storedValue, setValue];
-}
-
-// --- MODULE: DICE ---
-const DiceModule = ({ theme, accent }) => {
-  const [qty, setQty] = useState(1);
-  const [faces, setFaces] = useState(6);
-  const [isRolling, setIsRolling] = useState(false);
-  const [currentResult, setCurrentResult] = useState([]);
-
-  const rollDice = (rollQty = qty, rollFaces = faces) => {
-    triggerHaptic(20);
-    setIsRolling(true);
-    let count = 0;
-    const interval = setInterval(() => {
-      setCurrentResult(Array.from({ length: rollQty }, () => Math.floor(Math.random() * rollFaces) + 1));
-      if (++count > 12) {
-        clearInterval(interval);
-        setCurrentResult(Array.from({ length: rollQty }, () => Math.floor(Math.random() * rollFaces) + 1));
-        setIsRolling(false);
-        triggerHaptic([30, 50, 30]);
-      }
-    }, 50);
-  };
-
-  return (
-    <div className={`flex flex-col h-full p-6 pt-12 overflow-y-auto ${theme.text}`}>
-      <div className="flex items-center gap-2 mb-8 justify-center opacity-80 uppercase tracking-[0.2em] font-bold text-xs">
-        <Sparkles size={14} style={{ color: accent.color }} />
-        <span>Randomizer</span>
-      </div>
-
-      <div className="grid grid-cols-4 gap-3 mb-8">
-        {[6, 8, 12, 20].map(f => (
-          <button 
-            key={f} 
-            onClick={() => { setFaces(f); rollDice(qty, f); }} 
-            className={`${theme.card} backdrop-blur-md p-4 rounded-2xl border ${theme.border} font-bold transition-all active:scale-95`}
-          >
-            d{f}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <div className={`${theme.card} backdrop-blur-md rounded-2xl p-4 border ${theme.border}`}>
-          <label className="block text-[10px] uppercase tracking-widest opacity-40 mb-2 font-bold">Quantity</label>
-          <input type="number" value={qty} onChange={e => setQty(Math.max(1, parseInt(e.target.value)||1))} className="w-full bg-transparent text-3xl font-black outline-none" />
-        </div>
-        <div className={`${theme.card} backdrop-blur-md rounded-2xl p-4 border ${theme.border}`}>
-          <label className="block text-[10px] uppercase tracking-widest opacity-40 mb-2 font-bold">Faces</label>
-          <input type="number" value={faces} onChange={e => setFaces(Math.max(2, parseInt(e.target.value)||2))} className="w-full bg-transparent text-3xl font-black outline-none" />
-        </div>
-      </div>
-
-      <button 
-        onClick={() => rollDice()} 
-        disabled={isRolling} 
-        style={{ backgroundColor: accent.color }} 
-        className={`w-full py-5 rounded-3xl text-xl font-black text-white shadow-2xl transition-all active:scale-[0.98] ${isRolling ? 'opacity-50' : 'hover:opacity-90'} ${accent.glow}`}
-      >
-        {isRolling ? 'ROLLING...' : 'ROLL DICE'}
-      </button>
-
-      <div className="flex flex-wrap justify-center gap-4 mt-12 pb-24">
-        {currentResult.map((r, i) => (
-          <div key={i} className={`w-20 h-20 rounded-3xl ${theme.glass} backdrop-blur-xl border ${theme.border} flex items-center justify-center text-4xl font-black shadow-lg animate-in zoom-in duration-300`}>
-            {r}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// --- MODULE: FIRST PLAYER ---
-const FirstPlayerModule = ({ isActive, theme, accent }) => {
-  const [pointers, setPointers] = useState({});
-  const [status, setStatus] = useState('waiting');
-  const [winner, setWinner] = useState(null);
-  const [countdown, setCountdown] = useState(3);
-  const timerRef = useRef(null);
-
-  const startCountdown = useCallback(() => {
-    setStatus('counting');
-    setCountdown(3);
-    let count = 3;
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setCountdown(--count);
-      if (count <= 0) {
-        clearInterval(timerRef.current);
-        const ids = Object.keys(pointers);
-        if (ids.length > 0) {
-          setWinner(ids[Math.floor(Math.random() * ids.length)]);
-          setStatus('complete');
-          triggerHaptic([100, 50, 100]);
-        } else setStatus('waiting');
-      } else triggerHaptic(20);
-    }, 1000);
-  }, [pointers]);
-
-  useEffect(() => {
-    const count = Object.keys(pointers).length;
-    if (status === 'waiting' && count >= 2) startCountdown();
-    else if (status === 'counting' && count < 2) { clearInterval(timerRef.current); setStatus('waiting'); }
-  }, [pointers, status, startCountdown]);
-
-  return (
-    <div className="relative w-full h-full touch-none overflow-hidden" 
-      onPointerDown={e => {
-        if (status === 'complete') return;
-        const color = COLORS[e.pointerId % COLORS.length];
-        setPointers(p => ({ ...p, [e.pointerId]: { x: e.clientX, y: e.clientY, color } }));
-        triggerHaptic(10);
-      }}
-      onPointerMove={e => {
-        if (pointers[e.pointerId]) setPointers(p => ({ ...p, [e.pointerId]: { ...p[e.pointerId], x: e.clientX, y: e.clientY } }));
-      }}
-      onPointerUp={e => {
-        setPointers(p => { const n = {...p}; delete n[e.pointerId]; return n; });
-        if (status === 'complete') { setStatus('waiting'); setWinner(null); }
-      }}
-    >
-      {Object.keys(pointers).length === 0 && (
-        <div className={`absolute inset-0 flex flex-col items-center justify-center ${theme.subtext} text-center p-12 animate-in fade-in duration-700`}>
-          <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 backdrop-blur-md">
-            <Hand size={40} className="opacity-40" />
-          </div>
-          <p className="text-2xl font-black mb-2 tracking-tight">Initiative</p>
-          <p className="text-sm opacity-60 max-w-[200px] leading-relaxed">Everyone place a finger on the screen to choose a starter</p>
-        </div>
-      )}
-      {status === 'counting' && <div className="absolute inset-0 flex items-center justify-center text-[180px] font-black opacity-10 select-none animate-pulse">{countdown}</div>}
-      {Object.entries(pointers).map(([id, p]) => (
-        <div key={id} style={{ left: p.x, top: p.y, backgroundColor: status === 'complete' && winner === id ? '#fff' : p.color }}
-          className={`absolute w-32 h-32 -ml-16 -mt-16 rounded-full border-[6px] border-white/30 transition-all duration-300 shadow-2xl
-            ${status === 'complete' && winner === id ? 'scale-[2.5] shadow-[0_0_80px_#fff] z-20' : 'z-10'}
-            ${status === 'complete' && winner !== id ? 'opacity-0 scale-50' : 'opacity-100'}
-          `}
-        />
-      ))}
-    </div>
-  );
-};
-const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
-
-// --- MODULE: SCORECARD ---
-const ScorecardModule = ({ theme, accent, defaultPlayers, templates, setTemplates }) => {
-  const [sessions, setSessions] = useLocalStorage('bgt_sessions', []);
-  const [view, setView] = useState('list');
-  const [activeSessionId, setActiveSessionId] = useState(null);
-  const [setupPlayers, setSetupPlayers] = useState([]);
-  const [setupTemplateId, setSetupTemplateId] = useState('');
-
-  const session = useMemo(() => sessions.find(s => s.id === activeSessionId), [sessions, activeSessionId]);
-  const template = useMemo(() => templates.find(t => t.id === session?.templateId), [templates, session]);
-
-  const updateScore = (pId, rIdx, val) => {
-    setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, scores: { ...s.scores, [pId]: { ...s.scores[pId], [rIdx]: val } } } : s));
-  };
-
-  if (view === 'list') return (
-    <div className={`p-6 pt-12 flex flex-col h-full ${theme.text}`}>
-      <div className="flex justify-between items-end mb-8">
-        <div>
-          <h2 className="text-4xl font-black tracking-tighter">History</h2>
-          <p className={`text-xs font-bold uppercase tracking-widest ${theme.subtext} mt-1`}>Your Game Records</p>
-        </div>
-        <button 
-          onClick={() => { setSetupPlayers(defaultPlayers.length ? defaultPlayers : ['', '']); setSetupTemplateId(templates[0]?.id || ''); setView('setup'); }} 
-          style={{ backgroundColor: accent.color }} 
-          className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform"
-        >
-          <Plus />
-        </button>
-      </div>
-
-      <div className="space-y-4 pb-24 overflow-y-auto">
-        {sessions.length === 0 && (
-          <div className={`mt-12 text-center p-12 rounded-3xl border-2 border-dashed ${theme.border} opacity-40`}>
-            <TableProperties size={48} className="mx-auto mb-4" />
-            <p className="font-bold">No games recorded yet</p>
-          </div>
-        )}
-        {sessions.map(s => {
-          const t = templates.find(tpl => tpl.id === s.templateId);
-          return (
-            <div key={s.id} onClick={() => { setActiveSessionId(s.id); setView('play'); }} className={`${theme.card} backdrop-blur-md p-5 rounded-[2rem] border ${theme.border} active:scale-[0.98] transition-all`}>
-              <div className="flex justify-between mb-2">
-                <span className="font-black text-lg">{t?.name || 'Deleted Game'}</span>
-                <span className="text-[10px] opacity-40 font-bold uppercase pt-1">{new Date(s.timestamp).toLocaleDateString()}</span>
-              </div>
-              <div className="flex gap-2 overflow-hidden">
-                {s.players.map(p => (
-                  <span key={p.id} className="text-[10px] px-2 py-1 rounded-full bg-white/5 border border-white/5 font-bold uppercase">{p.name}</span>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  if (view === 'setup') return (
-    <div className={`p-6 pt-12 flex flex-col h-full ${theme.text}`}>
-      <div className="flex items-center gap-4 mb-8">
-        <button onClick={() => setView('list')} className={`w-10 h-10 rounded-full ${theme.card} border ${theme.border} flex items-center justify-center`}><ChevronLeft size={20}/></button>
-        <h2 className="text-2xl font-black tracking-tight">New Scorecard</h2>
-      </div>
-      <div className="flex-1 space-y-8 overflow-y-auto pb-8">
-        <div>
-          <label className="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-3 block">Game Template</label>
-          <div className="grid grid-cols-1 gap-2">
-            {templates.map(t => (
-              <button 
-                key={t.id} 
-                onClick={() => setSetupTemplateId(t.id)}
-                className={`p-4 rounded-2xl border text-left transition-all ${setupTemplateId === t.id ? 'border-white bg-white/10' : `${theme.card} ${theme.border}`}`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-bold">{t.name}</span>
-                  {setupTemplateId === t.id && <Check size={16} />}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <label className="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-3 block">Player Names</label>
-          <div className="space-y-3">
-            {setupPlayers.map((p, i) => (
-              <div key={i} className="flex gap-3">
-                <input 
-                  value={p} 
-                  onChange={e => { const n = [...setupPlayers]; n[i] = e.target.value; setSetupPlayers(n); }} 
-                  placeholder={`Player ${i+1}`} 
-                  className={`flex-1 ${theme.card} backdrop-blur-md p-4 rounded-2xl border ${theme.border} outline-none font-bold`} 
-                />
-                <button onClick={() => setSetupPlayers(setupPlayers.filter((_, idx) => idx !== i))} className="p-2 text-rose-500/60"><Trash2 size={20} /></button>
-              </div>
-            ))}
-            <button onClick={() => setSetupPlayers([...setupPlayers, ''])} className="w-full py-4 border-2 border-dashed border-white/5 rounded-2xl opacity-40 text-xs font-bold uppercase">+ Add Player</button>
-          </div>
-        </div>
-      </div>
-      <button 
-        onClick={() => {
-          const id = Date.now().toString();
-          const players = setupPlayers.filter(p=>p.trim()).map(n => ({ id: Math.random().toString(36).substr(2, 9), name: n }));
-          setSessions(prev => [{ id, templateId: setupTemplateId, timestamp: Date.now(), players, scores: {}, dynamicRows: null }, ...prev]);
-          setActiveSessionId(id); setView('play');
-        }} 
-        style={{ backgroundColor: accent.color }} 
-        className="w-full py-5 rounded-[2rem] font-black text-white text-lg shadow-2xl active:scale-[0.98] transition-transform"
-      >
-        START SCORING
-      </button>
-    </div>
-  );
-
-  if (view === 'play' && session && template) {
-    const activeRows = session.dynamicRows || template.rows;
-    const totals = session.players.map(p => {
-      let sum = 0;
-      activeRows.forEach((_, i) => { const v = session.scores[p.id]?.[i]; if (v && !isNaN(parseFloat(v))) sum += parseFloat(v); });
-      return { id: p.id, total: sum };
-    });
-    const winnerId = template.lowestWins ? totals.sort((a,b)=>a.total-b.total)[0].id : totals.sort((a,b)=>b.total-a.total)[0].id;
-
-    return (
-      <div className={`flex flex-col h-full ${theme.text}`}>
-        <div className={`px-6 pt-12 pb-4 flex items-center justify-between`}>
-          <button onClick={() => setView('list')} className={`w-10 h-10 rounded-full ${theme.card} border ${theme.border} flex items-center justify-center`}><ChevronLeft size={20}/></button>
-          <div className="text-center">
-            <h3 className="font-black text-xl tracking-tighter uppercase">{template.name}</h3>
-            <p className="text-[9px] font-bold opacity-30 tracking-[0.2em]">LIVE SCORECARD</p>
-          </div>
-          <button onClick={() => { if(confirm('Reset scores?')) setSessions(prev => prev.map(s => s.id === activeSessionId ? {...s, scores: {}, dynamicRows: null} : s)); }} className="opacity-40"><RotateCcw size={20} /></button>
-        </div>
-        
-        <div className="flex-1 overflow-auto px-4">
-          <div className={`${theme.card} backdrop-blur-xl border ${theme.border} rounded-[2rem] overflow-hidden`}>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-white/5 bg-white/5">
-                  <th className="p-4 text-left opacity-30 text-[9px] uppercase font-bold tracking-widest">Category</th>
-                  {session.players.map(p => <th key={p.id} className="p-4 text-center border-l border-white/5 font-black text-sm">{p.name}</th>)}
-                </tr>
-              </thead>
-              <tbody>
-                {activeRows.map((row, rIdx) => (
-                  <tr key={rIdx} className="border-b border-white/5">
-                    <td className="p-4 text-xs font-bold opacity-50 bg-white/[0.02]">{row}</td>
-                    {session.players.map(p => (
-                      <td key={p.id} className="p-0 border-l border-white/5">
-                        <input type="text" inputMode="decimal" value={session.scores[p.id]?.[rIdx] || ''} 
-                          onChange={e => updateScore(p.id, rIdx, e.target.value)}
-                          onBlur={e => updateScore(p.id, rIdx, evaluateMath(e.target.value))}
-                          className="w-full h-16 bg-transparent text-center font-black text-xl outline-none focus:bg-white/[0.03] transition-colors" 
-                        />
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="bg-white/10">
-                <tr className="font-black">
-                  <td className="p-6 text-xs uppercase tracking-widest opacity-60">Total</td>
-                  {session.players.map(p => (
-                    <td key={p.id} className="p-6 text-center text-2xl border-l border-white/5" style={{ color: p.id === winnerId ? accent.color : 'inherit' }}>
-                      {totals.find(t => t.id === p.id).total}
-                    </td>
-                  ))}
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-          <div className="h-24"></div>
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
-
-// --- MODULE: SETTINGS ---
-const SettingsModule = ({ theme, accent, themeKey, setThemeKey, setAccentKey, defaultPlayers, setDefaultPlayers, templates, setTemplates }) => {
-  return (
-    <div className={`p-6 pt-12 flex flex-col h-full ${theme.text}`}>
-      <h2 className="text-4xl font-black mb-10 tracking-tighter">Setup</h2>
-      
-      <div className="space-y-10 flex-1 overflow-y-auto pb-32">
-        <section>
-          <div className="flex items-center gap-2 mb-6 opacity-40"><Palette size={16} /><h3 className="text-[10px] uppercase font-black tracking-[0.2em]">Aesthetics</h3></div>
-          <div className="grid grid-cols-5 gap-3 mb-6">
-            {Object.entries(THEMES).map(([k, v]) => (
-              <button 
-                key={k} 
-                onClick={() => setThemeKey(k)} 
-                className={`h-14 rounded-2xl border-2 ${v.bg} flex items-center justify-center transition-all ${themeKey === k ? 'border-white scale-105 shadow-xl' : 'border-transparent opacity-60'}`}
-              >
-                {k === 'light' ? <Sun size={20} className="text-zinc-500" /> : <Moon size={20} className="text-zinc-400" />}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-3">
-            {Object.entries(ACCENTS).map(([k, v]) => (
-              <button 
-                key={k} 
-                onClick={() => setAccentKey(k)} 
-                style={{ backgroundColor: v.color }} 
-                className={`w-full h-12 rounded-2xl flex items-center justify-center transition-all ${accent.color === v.color ? 'ring-4 ring-white/20 scale-105' : 'opacity-80 active:scale-95'}`}
-              >
-                {accent.color === v.color && <Check size={20} className="text-white" />}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section>
-          <div className="flex items-center gap-2 mb-6 opacity-40"><User size={16} /><h3 className="text-[10px] uppercase font-black tracking-[0.2em]">Defaults</h3></div>
-          <div className="space-y-3">
-            {defaultPlayers.map((p, i) => (
-              <input 
-                key={i} 
-                value={p} 
-                onChange={e => { const n = [...defaultPlayers]; n[i] = e.target.value; setDefaultPlayers(n); }} 
-                placeholder="Name" 
-                className={`w-full ${theme.card} backdrop-blur-md p-4 rounded-2xl border ${theme.border} outline-none font-bold`} 
-              />
-            ))}
-            <button onClick={() => setDefaultPlayers([...defaultPlayers, ''])} className="w-full py-4 border-2 border-dashed border-white/5 rounded-2xl opacity-30 text-[10px] font-bold uppercase">+ Add Slot</button>
-          </div>
-        </section>
-
-        <section className="pt-6">
-          <button onClick={() => { if(confirm('Wipe everything?')) { localStorage.clear(); window.location.reload(); } }} className="w-full py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-[10px] font-black tracking-widest text-rose-500 uppercase">Factory Reset</button>
-        </section>
-      </div>
-    </div>
-  );
-};
-
-// --- APP CORE ---
-const App = () => {
-  const [activeTab, setActiveTab] = useState('dice');
-  const [themeKey, setThemeKey] = useLocalStorage('bgt_theme', 'oled');
-  const [accentKey, setAccentKey] = useLocalStorage('bgt_accent', 'indigo');
-  const [defaultPlayers, setDefaultPlayers] = useLocalStorage('bgt_players', ['P1', 'P2']);
-  const [templates, setTemplates] = useLocalStorage('bgt_templates', [
-    { id: '1', name: 'Board Game', rows: ['Victory Points'], lowestWins: false, allowAddingRows: true },
-    { id: '2', name: 'Strategy', rows: ['Board', 'Tech', 'Bonus'], lowestWins: false, allowAddingRows: false }
-  ]);
-
-  const theme = THEMES[themeKey] || THEMES.oled;
-  const accent = ACCENTS[accentKey] || ACCENTS.indigo;
-
-  return (
-    <div className={`h-screen w-screen flex flex-col ${theme.bg} ${theme.text} font-sans overflow-hidden fixed inset-0 selection:bg-indigo-500/30`}>
-      {/* Dynamic Background Glow */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] blur-[120px] rounded-full opacity-20 pointer-events-none" style={{ backgroundColor: accent.color }}></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] blur-[100px] rounded-full opacity-10 pointer-events-none" style={{ backgroundColor: accent.color }}></div>
-
-      <main className="flex-1 relative z-10">
-        <div className={`absolute inset-0 ${activeTab === 'dice' ? 'block' : 'hidden'}`}>
-          <DiceModule theme={theme} accent={accent} />
-        </div>
-        <div className={`absolute inset-0 ${activeTab === 'selector' ? 'block' : 'hidden'}`}>
-          <FirstPlayerModule isActive={activeTab === 'selector'} theme={theme} accent={accent} />
-        </div>
-        <div className={`absolute inset-0 ${activeTab === 'scores' ? 'block' : 'hidden'}`}>
-          <ScorecardModule isActive={activeTab === 'scores'} theme={theme} accent={accent} defaultPlayers={defaultPlayers} templates={templates} setTemplates={setTemplates} />
-        </div>
-        <div className={`absolute inset-0 ${activeTab === 'settings' ? 'block' : 'hidden'}`}>
-          <SettingsModule theme={theme} accent={accent} themeKey={themeKey} setThemeKey={setThemeKey} setAccentKey={setAccentKey} defaultPlayers={defaultPlayers} setDefaultPlayers={setDefaultPlayers} templates={templates} setTemplates={setTemplates} />
-        </div>
-      </main>
-
-      {/* Floating Glass Navigation */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-[100]">
-        <nav className={`${theme.glass} backdrop-blur-2xl border ${theme.border} h-20 rounded-[2.5rem] flex justify-around items-center px-4 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.5)]`}>
-          {[
-            { id: 'dice', icon: Dices, label: 'Dice' },
-            { id: 'selector', icon: Hand, label: 'Start' },
-            { id: 'scores', icon: TableProperties, label: 'Score' },
-            { id: 'settings', icon: Settings, label: 'Setup' }
-          ].map(tab => (
-            <button 
-              key={tab.id} 
-              onClick={() => { setActiveTab(tab.id); triggerHaptic(5); }} 
-              className={`flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all duration-300 ${activeTab === tab.id ? 'scale-110' : 'opacity-40 grayscale'}`}
-              style={{ 
-                color: activeTab === tab.id ? accent.color : 'inherit',
-                backgroundColor: activeTab === tab.id ? 'rgba(255,255,255,0.05)' : 'transparent'
-              }}
-            >
-              <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
-              <span className="text-[8px] font-black uppercase tracking-[0.15em]">{tab.label}</span>
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Board Game Toolbox</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior: none;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        .glass {
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+        }
         input[type="number"]::-webkit-inner-spin-button { display: none; }
-        * { -webkit-tap-highlight-color: transparent; }
-        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.2; } }
-      `}} />
-    </div>
-  );
-};
+        * { -webkit-tap-highlight-color: transparent; outline: none; }
+        
+        .tab-content { display: none; height: 100%; width: 100%; overflow-y: auto; }
+        .tab-content.active { display: block; }
 
-export default App;
+        .pointer-ring {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            margin-left: -60px;
+            margin-top: -60px;
+            border-radius: 50%;
+            border: 6px solid rgba(255,255,255,0.4);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .winner-ring {
+            transform: scale(2.5);
+            background-color: white !important;
+            box-shadow: 0 0 80px rgba(255,255,255,0.8);
+            border-color: white;
+            z-index: 60;
+        }
+
+        .fade-out { opacity: 0; transform: scale(0.5); }
+    </style>
+</head>
+<body class="bg-black text-white selection:bg-indigo-500/30">
+
+    <!-- Background Elements -->
+    <div id="bg-glow-1" class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] blur-[120px] rounded-full opacity-20 pointer-events-none transition-colors duration-1000"></div>
+    <div id="bg-glow-2" class="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] blur-[100px] rounded-full opacity-10 pointer-events-none transition-colors duration-1000"></div>
+
+    <div id="app" class="h-full w-full relative z-10">
+        
+        <!-- DICE TAB -->
+        <div id="dice" class="tab-content active p-6 pt-12">
+            <div class="flex items-center gap-2 mb-8 justify-center opacity-80 uppercase tracking-[0.2em] font-bold text-xs">
+                <span class="accent-text">✦</span>
+                <span>Randomizer</span>
+            </div>
+
+            <div class="grid grid-cols-4 gap-3 mb-8">
+                <button onclick="quickRoll(6)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-95 transition-all">d6</button>
+                <button onclick="quickRoll(8)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-95 transition-all">d8</button>
+                <button onclick="quickRoll(12)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-95 transition-all">d12</button>
+                <button onclick="quickRoll(20)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-95 transition-all">d20</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="glass bg-white/5 rounded-2xl p-4 border border-white/10">
+                    <label class="block text-[10px] uppercase tracking-widest opacity-40 mb-2 font-bold">Qty</label>
+                    <input id="dice-qty" type="number" value="1" min="1" class="w-full bg-transparent text-3xl font-black outline-none">
+                </div>
+                <div class="glass bg-white/5 rounded-2xl p-4 border border-white/10">
+                    <label class="block text-[10px] uppercase tracking-widest opacity-40 mb-2 font-bold">Faces</label>
+                    <input id="dice-faces" type="number" value="6" min="2" class="w-full bg-transparent text-3xl font-black outline-none">
+                </div>
+            </div>
+
+            <button id="roll-btn" onclick="rollDice()" class="accent-bg w-full py-5 rounded-3xl text-xl font-black text-white shadow-2xl transition-all active:scale-[0.98]">
+                ROLL DICE
+            </button>
+
+            <div id="dice-results" class="flex flex-wrap justify-center gap-4 mt-12 pb-32"></div>
+        </div>
+
+        <!-- SELECTOR TAB -->
+        <div id="selector" class="tab-content relative touch-none overflow-hidden">
+            <div id="selector-hint" class="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 text-center p-12">
+                <div class="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 glass">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-40"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+                </div>
+                <p class="text-2xl font-black mb-2 tracking-tight text-white">Initiative</p>
+                <p class="text-sm opacity-60 max-w-[200px] leading-relaxed">Everyone place a finger on the screen</p>
+            </div>
+            <div id="selector-countdown" class="absolute inset-0 flex items-center justify-center text-[180px] font-black opacity-10 pointer-events-none"></div>
+        </div>
+
+        <!-- SCORECARD TAB -->
+        <div id="scores" class="tab-content p-6 pt-12">
+            <div id="history-view">
+                <div class="flex justify-between items-end mb-8">
+                    <div>
+                        <h2 class="text-4xl font-black tracking-tighter">History</h2>
+                        <p class="text-xs font-bold uppercase tracking-widest text-zinc-500 mt-1">Game Records</p>
+                    </div>
+                    <button onclick="showSetup()" class="accent-bg w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
+                </div>
+                <div id="history-list" class="space-y-4 pb-32"></div>
+            </div>
+
+            <div id="setup-view" class="hidden">
+                <div class="flex items-center gap-4 mb-8">
+                    <button onclick="showHistory()" class="w-10 h-10 rounded-full glass bg-white/5 border border-white/10 flex items-center justify-center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+                    <h2 class="text-2xl font-black tracking-tight">New Game</h2>
+                </div>
+                <div class="space-y-6 pb-32">
+                    <div>
+                        <label class="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-3 block">Players</label>
+                        <div id="setup-players-list" class="space-y-3"></div>
+                        <button onclick="addPlayerField()" class="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl opacity-40 text-xs font-bold uppercase mt-3">+ Add Player</button>
+                    </div>
+                    <button onclick="startNewGame()" class="accent-bg w-full py-5 rounded-[2rem] font-black text-white text-lg shadow-2xl active:scale-[0.98] transition-transform">START SCORING</button>
+                </div>
+            </div>
+
+            <div id="play-view" class="hidden">
+                 <div class="flex items-center justify-between mb-6">
+                    <button onclick="showHistory()" class="w-10 h-10 rounded-full glass bg-white/5 border border-white/10 flex items-center justify-center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+                    <div class="text-center">
+                        <h3 class="font-black text-xl tracking-tighter uppercase">Scoring</h3>
+                    </div>
+                    <button onclick="resetCurrentScores()" class="opacity-40"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg></button>
+                </div>
+                <div id="score-table-container" class="glass bg-white/5 border border-white/10 rounded-[2rem] overflow-x-auto pb-32"></div>
+            </div>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div id="settings" class="tab-content p-6 pt-12">
+            <h2 class="text-4xl font-black mb-10 tracking-tighter">Setup</h2>
+            <div class="space-y-10 pb-32">
+                <section>
+                    <div class="flex items-center gap-2 mb-6 opacity-40"><h3 class="text-[10px] uppercase font-black tracking-[0.2em]">Theme</h3></div>
+                    <div id="theme-grid" class="grid grid-cols-5 gap-3"></div>
+                </section>
+                <section>
+                    <div class="flex items-center gap-2 mb-6 opacity-40"><h3 class="text-[10px] uppercase font-black tracking-[0.2em]">Accent</h3></div>
+                    <div id="accent-grid" class="flex gap-3"></div>
+                </section>
+                <button onclick="factoryReset()" class="w-full py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-[10px] font-black tracking-widest text-rose-500 uppercase">Clear All Data</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Floating Navigation -->
+    <div class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-[100]">
+        <nav class="glass bg-zinc-900/60 border border-white/10 h-20 rounded-[2.5rem] flex justify-around items-center px-4 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.5)]">
+            <button onclick="switchTab('dice')" class="nav-btn flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all" data-tab="dice">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M12 8h.01"/><path d="M8 12h.01"/><path d="M16 12h.01"/><path d="M12 16h.01"/></svg>
+                <span class="text-[8px] font-black uppercase tracking-[0.15em]">Dice</span>
+            </button>
+            <button onclick="switchTab('selector')" class="nav-btn flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all" data-tab="selector">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+                <span class="text-[8px] font-black uppercase tracking-[0.15em]">Start</span>
+            </button>
+            <button onclick="switchTab('scores')" class="nav-btn flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all" data-tab="scores">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
+                <span class="text-[8px] font-black uppercase tracking-[0.15em]">Score</span>
+            </button>
+            <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all" data-tab="settings">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.72l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span class="text-[8px] font-black uppercase tracking-[0.15em]">Setup</span>
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        // --- CONFIG & STATE ---
+        const THEMES = {
+            oled: { name: 'OLED', bg: '#000000', card: 'rgba(24, 24, 27, 0.4)', border: 'rgba(39, 39, 42, 0.5)', text: '#ffffff' },
+            dark: { name: 'Midnight', bg: '#020617', card: 'rgba(15, 23, 42, 0.4)', border: 'rgba(30, 41, 59, 0.5)', text: '#f8fafc' },
+            nord: { name: 'Nordic', bg: '#2e3440', card: 'rgba(59, 66, 82, 0.4)', border: 'rgba(76, 86, 106, 0.5)', text: '#eceff4' },
+            sunset: { name: 'Sunset', bg: '#1a1625', card: 'rgba(45, 36, 56, 0.4)', border: 'rgba(67, 54, 84, 0.5)', text: '#f3f1f5' },
+            light: { name: 'Paper', bg: '#fafafa', card: 'rgba(255, 255, 255, 0.6)', border: 'rgba(228, 228, 231, 0.8)', text: '#09090b' }
+        };
+
+        const ACCENTS = {
+            indigo: '#6366f1',
+            emerald: '#10b981',
+            rose: '#f43f5e',
+            amber: '#f59e0b',
+            cyan: '#06b6d4'
+        };
+
+        let state = {
+            activeTab: 'dice',
+            theme: 'oled',
+            accent: 'indigo',
+            sessions: JSON.parse(localStorage.getItem('bgt_sessions') || '[]'),
+            currentSessionId: null,
+            setupPlayers: ['Player 1', 'Player 2']
+        };
+
+        // --- CORE UTILS ---
+        const triggerHaptic = (ms = 10) => navigator.vibrate && navigator.vibrate(ms);
+        const saveState = () => localStorage.setItem('bgt_sessions', JSON.stringify(state.sessions));
+
+        function switchTab(tabId) {
+            state.activeTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const isActive = btn.dataset.tab === tabId;
+                btn.style.opacity = isActive ? '1' : '0.4';
+                btn.style.color = isActive ? ACCENTS[state.accent] : 'inherit';
+                btn.style.backgroundColor = isActive ? 'rgba(255,255,255,0.05)' : 'transparent';
+                btn.classList.toggle('scale-110', isActive);
+            });
+
+            if(tabId === 'scores') renderHistory();
+            if(tabId === 'selector') initPointerLogic();
+        }
+
+        function applyTheme() {
+            const t = THEMES[state.theme];
+            const a = ACCENTS[state.accent];
+            document.body.style.backgroundColor = t.bg;
+            document.body.style.color = t.text;
+            document.getElementById('bg-glow-1').style.backgroundColor = a;
+            document.getElementById('bg-glow-2').style.backgroundColor = a;
+            
+            document.querySelectorAll('.accent-bg').forEach(el => el.style.backgroundColor = a);
+            document.querySelectorAll('.accent-text').forEach(el => el.style.color = a);
+            
+            // Re-render nav colors
+            switchTab(state.activeTab);
+        }
+
+        // --- DICE LOGIC ---
+        function rollDice() {
+            const qty = parseInt(document.getElementById('dice-qty').value) || 1;
+            const faces = parseInt(document.getElementById('dice-faces').value) || 6;
+            const container = document.getElementById('dice-results');
+            const btn = document.getElementById('roll-btn');
+            
+            triggerHaptic(20);
+            btn.disabled = true;
+            btn.innerText = 'ROLLING...';
+            btn.style.opacity = '0.5';
+
+            let count = 0;
+            const interval = setInterval(() => {
+                container.innerHTML = '';
+                for(let i=0; i<qty; i++) {
+                    const val = Math.floor(Math.random() * faces) + 1;
+                    const die = document.createElement('div');
+                    die.className = `w-20 h-20 rounded-3xl glass bg-white/5 border border-white/10 flex items-center justify-center text-4xl font-black shadow-lg`;
+                    die.innerText = val;
+                    container.appendChild(die);
+                }
+                if(++count > 12) {
+                    clearInterval(interval);
+                    btn.disabled = false;
+                    btn.innerText = 'ROLL DICE';
+                    btn.style.opacity = '1';
+                    triggerHaptic([30, 50, 30]);
+                }
+            }, 50);
+        }
+
+        function quickRoll(faces) {
+            document.getElementById('dice-faces').value = faces;
+            rollDice();
+        }
+
+        // --- SELECTOR LOGIC ---
+        let activePointers = {};
+        let selectorTimer = null;
+        let selectorStatus = 'waiting';
+
+        function initPointerLogic() {
+            const el = document.getElementById('selector');
+            el.innerHTML = `
+                <div id="selector-hint" class="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 text-center p-12">
+                    <div class="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 glass">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+                    </div>
+                    <p class="text-2xl font-black mb-2 tracking-tight text-white">Initiative</p>
+                    <p class="text-sm opacity-60">Everyone place a finger on the screen</p>
+                </div>
+                <div id="selector-countdown" class="absolute inset-0 flex items-center justify-center text-[150px] font-black opacity-10 pointer-events-none"></div>
+            `;
+
+            el.addEventListener('pointerdown', e => {
+                if(selectorStatus === 'complete') return;
+                const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+                const color = colors[e.pointerId % colors.length];
+                
+                activePointers[e.pointerId] = { x: e.clientX, y: e.clientY, color };
+                const ring = document.createElement('div');
+                ring.id = `pointer-${e.pointerId}`;
+                ring.className = 'pointer-ring';
+                ring.style.left = e.clientX + 'px';
+                ring.style.top = e.clientY + 'px';
+                ring.style.backgroundColor = color;
+                el.appendChild(ring);
+                
+                document.getElementById('selector-hint').style.display = 'none';
+                triggerHaptic(10);
+                checkSelectorStart();
+            });
+
+            el.addEventListener('pointermove', e => {
+                if(activePointers[e.pointerId]) {
+                    const ring = document.getElementById(`pointer-${e.pointerId}`);
+                    if(ring) {
+                        ring.style.left = e.clientX + 'px';
+                        ring.style.top = e.clientY + 'px';
+                    }
+                }
+            });
+
+            el.addEventListener('pointerup', removePointer);
+            el.addEventListener('pointercancel', removePointer);
+        }
+
+        function removePointer(e) {
+            delete activePointers[e.pointerId];
+            const ring = document.getElementById(`pointer-${e.pointerId}`);
+            if(ring) ring.remove();
+            
+            if(Object.keys(activePointers).length < 2 && selectorStatus === 'counting') {
+                clearInterval(selectorTimer);
+                selectorStatus = 'waiting';
+                document.getElementById('selector-countdown').innerText = '';
+            }
+            if(Object.keys(activePointers).length === 0) {
+                selectorStatus = 'waiting';
+                document.getElementById('selector-hint').style.display = 'flex';
+            }
+        }
+
+        function checkSelectorStart() {
+            if(selectorStatus === 'waiting' && Object.keys(activePointers).length >= 2) {
+                selectorStatus = 'counting';
+                let time = 3;
+                document.getElementById('selector-countdown').innerText = time;
+                selectorTimer = setInterval(() => {
+                    time--;
+                    if(time <= 0) {
+                        clearInterval(selectorTimer);
+                        finishSelector();
+                    } else {
+                        document.getElementById('selector-countdown').innerText = time;
+                        triggerHaptic(20);
+                    }
+                }, 1000);
+            }
+        }
+
+        function finishSelector() {
+            selectorStatus = 'complete';
+            const ids = Object.keys(activePointers);
+            const winnerId = ids[Math.floor(Math.random() * ids.length)];
+            
+            ids.forEach(id => {
+                const ring = document.getElementById(`pointer-${id}`);
+                if(id == winnerId) ring.classList.add('winner-ring');
+                else ring.classList.add('fade-out');
+            });
+            
+            document.getElementById('selector-countdown').innerText = 'GO!';
+            triggerHaptic([100, 50, 100]);
+        }
+
+        // --- SCORECARD LOGIC ---
+        function showHistory() {
+            document.getElementById('history-view').classList.remove('hidden');
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('play-view').classList.add('hidden');
+            renderHistory();
+        }
+
+        function showSetup() {
+            document.getElementById('history-view').classList.add('hidden');
+            document.getElementById('setup-view').classList.remove('hidden');
+            document.getElementById('play-view').classList.add('hidden');
+            renderSetupFields();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            if(state.sessions.length === 0) {
+                list.innerHTML = `<div class="mt-12 text-center p-12 rounded-3xl border-2 border-dashed border-white/5 opacity-40">No records found</div>`;
+                return;
+            }
+            list.innerHTML = state.sessions.map(s => `
+                <div onclick="openSession('${s.id}')" class="glass bg-white/5 p-5 rounded-[2rem] border border-white/10 active:scale-[0.98] transition-all">
+                    <div class="flex justify-between mb-2">
+                        <span class="font-black text-lg">${new Date(s.timestamp).toLocaleDateString()}</span>
+                        <span class="text-[10px] opacity-40 font-bold uppercase pt-1">${s.players.length} Players</span>
+                    </div>
+                    <div class="flex gap-2 overflow-hidden">
+                        ${s.players.map(p => `<span class="text-[10px] px-2 py-1 rounded-full bg-white/5 border border-white/5 font-bold uppercase">${p.name}</span>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderSetupFields() {
+            const list = document.getElementById('setup-players-list');
+            list.innerHTML = state.setupPlayers.map((p, i) => `
+                <div class="flex gap-3">
+                    <input value="${p}" oninput="state.setupPlayers[${i}] = this.value" placeholder="Player Name" class="flex-1 glass bg-white/5 p-4 rounded-2xl border border-white/10 outline-none font-bold">
+                    <button onclick="removePlayerField(${i})" class="p-2 text-rose-500/60"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button>
+                </div>
+            `).join('');
+        }
+
+        function addPlayerField() {
+            state.setupPlayers.push('');
+            renderSetupFields();
+        }
+
+        function removePlayerField(i) {
+            state.setupPlayers.splice(i, 1);
+            renderSetupFields();
+        }
+
+        function startNewGame() {
+            const id = Date.now().toString();
+            const players = state.setupPlayers.filter(p => p.trim()).map(n => ({ id: Math.random().toString(36).substr(2, 9), name: n }));
+            if(players.length === 0) return;
+            
+            const newSession = {
+                id,
+                timestamp: Date.now(),
+                players,
+                scores: players.reduce((acc, p) => ({ ...acc, [p.id]: [0] }), {}),
+                rows: ['Points']
+            };
+            
+            state.sessions.unshift(newSession);
+            saveState();
+            openSession(id);
+        }
+
+        function openSession(id) {
+            state.currentSessionId = id;
+            document.getElementById('history-view').classList.add('hidden');
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('play-view').classList.remove('hidden');
+            renderScoreTable();
+        }
+
+        function renderScoreTable() {
+            const s = state.sessions.find(x => x.id === state.currentSessionId);
+            const container = document.getElementById('score-table-container');
+            
+            let html = `<table class="w-full border-collapse">
+                <thead><tr class="border-b border-white/5 bg-white/5">
+                    <th class="p-4 text-left opacity-30 text-[9px] uppercase font-bold tracking-widest">Row</th>
+                    ${s.players.map(p => `<th class="p-4 text-center border-l border-white/5 font-black text-sm">${p.name}</th>`).join('')}
+                </tr></thead>
+                <tbody>`;
+
+            s.rows.forEach((row, rIdx) => {
+                html += `<tr class="border-b border-white/5">
+                    <td class="p-4 text-xs font-bold opacity-50 bg-white/[0.02]">${row}</td>
+                    ${s.players.map(p => `
+                        <td class="p-0 border-l border-white/5">
+                            <input type="text" inputMode="decimal" value="${s.scores[p.id][rIdx] || ''}" 
+                                onblur="updateScoreValue('${p.id}', ${rIdx}, this.value)"
+                                class="w-full h-16 bg-transparent text-center font-black text-xl outline-none focus:bg-white/[0.03]">
+                        </td>
+                    `).join('')}
+                </tr>`;
+            });
+
+            const totals = s.players.map(p => {
+                const sum = s.scores[p.id].reduce((a, b) => a + (parseFloat(b) || 0), 0);
+                return { id: p.id, total: sum };
+            });
+
+            html += `</tbody><tfoot class="bg-white/10 font-black"><tr>
+                <td class="p-6 text-xs uppercase tracking-widest opacity-60">Total</td>
+                ${totals.map(t => `<td class="p-6 text-center text-2xl border-l border-white/5">${t.total}</td>`).join('')}
+            </tr></tfoot></table>
+            <button onclick="addRowToCurrent()" class="w-full py-4 text-xs font-bold opacity-30 uppercase">+ Add Row</button>`;
+            
+            container.innerHTML = html;
+        }
+
+        function updateScoreValue(pId, rIdx, val) {
+            const s = state.sessions.find(x => x.id === state.currentSessionId);
+            try {
+                // Quick math eval
+                const clean = val.replace(/[^0-9+\-*/.]/g, '');
+                const result = clean ? new Function(`return ${clean}`)() : 0;
+                s.scores[pId][rIdx] = result;
+            } catch(e) { s.scores[pId][rIdx] = 0; }
+            saveState();
+            renderScoreTable();
+        }
+
+        function addRowToCurrent() {
+            const s = state.sessions.find(x => x.id === state.currentSessionId);
+            s.rows.push(`Round ${s.rows.length + 1}`);
+            s.players.forEach(p => s.scores[p.id].push(0));
+            saveState();
+            renderScoreTable();
+        }
+
+        function resetCurrentScores() {
+            if(!confirm('Clear all scores for this game?')) return;
+            const s = state.sessions.find(x => x.id === state.currentSessionId);
+            s.rows = ['Points'];
+            s.players.forEach(p => s.scores[p.id] = [0]);
+            saveState();
+            renderScoreTable();
+        }
+
+        // --- SETTINGS LOGIC ---
+        function renderSettings() {
+            const tGrid = document.getElementById('theme-grid');
+            tGrid.innerHTML = Object.entries(THEMES).map(([k, v]) => `
+                <button onclick="setTheme('${k}')" class="h-14 rounded-2xl border-2 flex items-center justify-center transition-all ${state.theme === k ? 'border-white scale-105' : 'border-transparent opacity-60'}" style="background-color: ${v.bg}">
+                    ${k === 'light' ? '☀️' : '🌙'}
+                </button>
+            `).join('');
+
+            const aGrid = document.getElementById('accent-grid');
+            aGrid.innerHTML = Object.entries(ACCENTS).map(([k, v]) => `
+                <button onclick="setAccent('${k}')" class="w-full h-12 rounded-2xl flex items-center justify-center transition-all ${state.accent === k ? 'ring-4 ring-white/20 scale-105' : 'opacity-80'}" style="background-color: ${v}">
+                    ${state.accent === k ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}
+                </button>
+            `).join('');
+        }
+
+        function setTheme(k) { state.theme = k; applyTheme(); renderSettings(); localStorage.setItem('bgt_theme', k); }
+        function setAccent(k) { state.accent = k; applyTheme(); renderSettings(); localStorage.setItem('bgt_accent', k); }
+
+        function factoryReset() {
+            if(confirm('Wipe all history and settings?')) {
+                localStorage.clear();
+                window.location.reload();
+            }
+        }
+
+        // --- INIT ---
+        window.onload = () => {
+            state.theme = localStorage.getItem('bgt_theme') || 'oled';
+            state.accent = localStorage.getItem('bgt_accent') || 'indigo';
+            applyTheme();
+            renderSettings();
+            switchTab('dice');
+        };
+    </script>
+</body>
+</html>
