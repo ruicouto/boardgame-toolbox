@@ -5,216 +5,200 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Board Game Toolbox</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            overscroll-behavior: none;
-            overflow: hidden;
-            position: fixed;
-            width: 100%;
-            height: 100%;
-        }
-        .glass {
-            backdrop-filter: blur(24px) saturate(180%);
-            -webkit-backdrop-filter: blur(24px) saturate(180%);
-        }
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overscroll-behavior: none; overflow: hidden; position: fixed; width: 100%; height: 100%; }
+        .glass { backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); }
         input[type="number"]::-webkit-inner-spin-button { display: none; }
         * { -webkit-tap-highlight-color: transparent; outline: none; }
-        
-        .tab-content { display: none; height: 100%; width: 100%; overflow-y: auto; }
+        .tab-content { display: none; height: 100%; width: 100%; overflow-y: auto; padding-bottom: 140px; }
         .tab-content.active { display: block; }
-
-        .pointer-ring {
-            position: absolute;
-            width: 120px;
-            height: 120px;
-            margin-left: -60px;
-            margin-top: -60px;
-            border-radius: 50%;
-            border: 6px solid rgba(255,255,255,0.4);
-            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s;
-            pointer-events: none;
-            z-index: 50;
-        }
-
-        .winner-ring {
-            transform: scale(2.5);
-            background-color: white !important;
-            box-shadow: 0 0 80px rgba(255,255,255,0.8);
-            border-color: white;
-            z-index: 60;
-        }
-
+        .pointer-ring { position: absolute; width: 120px; height: 120px; margin-left: -60px; margin-top: -60px; border-radius: 50%; border: 6px solid rgba(255,255,255,0.4); transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s; pointer-events: none; z-index: 50; }
+        .winner-ring { transform: scale(2.5); background-color: white !important; box-shadow: 0 0 80px rgba(255,255,255,0.8); border-color: white; z-index: 60; }
         .fade-out { opacity: 0; transform: scale(0.5); }
+        .score-input:focus { background: rgba(255,255,255,0.05); }
+        .hide-scroll::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-black text-white selection:bg-indigo-500/30">
+<body class="bg-black text-white">
 
-    <!-- Background Elements -->
-    <div id="bg-glow-1" class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] blur-[120px] rounded-full opacity-20 pointer-events-none transition-colors duration-1000"></div>
-    <div id="bg-glow-2" class="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] blur-[100px] rounded-full opacity-10 pointer-events-none transition-colors duration-1000"></div>
+    <div id="bg-glow-1" class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] blur-[120px] rounded-full opacity-20 pointer-events-none transition-colors duration-1000"></div>
+    <div id="bg-glow-2" class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] blur-[100px] rounded-full opacity-10 pointer-events-none transition-colors duration-1000"></div>
 
     <div id="app" class="h-full w-full relative z-10">
         
         <!-- DICE TAB -->
         <div id="dice" class="tab-content active p-6 pt-12">
-            <div class="flex items-center gap-2 mb-8 justify-center opacity-80 uppercase tracking-[0.2em] font-bold text-xs">
-                <span class="accent-text">✦</span>
-                <span>Randomizer</span>
+            <div class="flex items-center gap-2 mb-8 justify-center opacity-40 uppercase tracking-[0.2em] font-extrabold text-[10px]">
+                <span class="accent-text">✦</span> <span>Randomizer</span>
             </div>
-
-            <div class="grid grid-cols-4 gap-3 mb-8">
-                <button onclick="quickRoll(6)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-95 transition-all">d6</button>
-                <button onclick="quickRoll(8)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-95 transition-all">d8</button>
-                <button onclick="quickRoll(12)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-95 transition-all">d12</button>
-                <button onclick="quickRoll(20)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-95 transition-all">d20</button>
+            <div class="grid grid-cols-4 gap-3 mb-6">
+                <button onclick="quickRoll(6)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-90 transition-all">d6</button>
+                <button onclick="quickRoll(8)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-90 transition-all">d8</button>
+                <button onclick="quickRoll(12)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-90 transition-all">d12</button>
+                <button onclick="quickRoll(20)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-90 transition-all">d20</button>
             </div>
-
-            <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="grid grid-cols-2 gap-4 mb-6">
                 <div class="glass bg-white/5 rounded-2xl p-4 border border-white/10">
-                    <label class="block text-[10px] uppercase tracking-widest opacity-40 mb-2 font-bold">Qty</label>
+                    <label class="block text-[10px] uppercase tracking-widest opacity-40 mb-1 font-bold">Qty</label>
                     <input id="dice-qty" type="number" value="1" min="1" class="w-full bg-transparent text-3xl font-black outline-none">
                 </div>
                 <div class="glass bg-white/5 rounded-2xl p-4 border border-white/10">
-                    <label class="block text-[10px] uppercase tracking-widest opacity-40 mb-2 font-bold">Faces</label>
+                    <label class="block text-[10px] uppercase tracking-widest opacity-40 mb-1 font-bold">Faces</label>
                     <input id="dice-faces" type="number" value="6" min="2" class="w-full bg-transparent text-3xl font-black outline-none">
                 </div>
             </div>
-
-            <button id="roll-btn" onclick="rollDice()" class="accent-bg w-full py-5 rounded-3xl text-xl font-black text-white shadow-2xl transition-all active:scale-[0.98]">
-                ROLL DICE
-            </button>
-
-            <div id="dice-results" class="flex flex-wrap justify-center gap-4 mt-12 pb-32"></div>
+            <button id="roll-btn" onclick="rollDice()" class="accent-bg w-full py-5 rounded-3xl text-xl font-black text-white shadow-xl active:scale-95 transition-all">ROLL DICE</button>
+            <div id="dice-results" class="flex flex-wrap justify-center gap-4 mt-12"></div>
         </div>
 
-        <!-- SELECTOR TAB -->
-        <div id="selector" class="tab-content relative touch-none overflow-hidden">
-            <div id="selector-hint" class="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 text-center p-12">
-                <div class="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 glass">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-40"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+        <!-- FIRST PLAYER TAB -->
+        <div id="selector" class="tab-content relative touch-none overflow-hidden h-full">
+            <div id="selector-hint" class="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 text-center p-12 pointer-events-none">
+                <div class="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 glass opacity-40">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
                 </div>
-                <p class="text-2xl font-black mb-2 tracking-tight text-white">Initiative</p>
-                <p class="text-sm opacity-60 max-w-[200px] leading-relaxed">Everyone place a finger on the screen</p>
+                <p class="text-2xl font-black mb-1 text-white tracking-tight">First Player</p>
+                <p class="text-xs opacity-60">Place fingers to start</p>
             </div>
-            <div id="selector-countdown" class="absolute inset-0 flex items-center justify-center text-[180px] font-black opacity-10 pointer-events-none"></div>
+            <div id="selector-countdown" class="absolute inset-0 flex items-center justify-center text-[120px] font-black opacity-10 pointer-events-none"></div>
         </div>
 
-        <!-- SCORECARD TAB -->
+        <!-- SCORES TAB -->
         <div id="scores" class="tab-content p-6 pt-12">
-            <div id="history-view">
+            <!-- View 1: History + Start Game -->
+            <div id="score-history-view">
                 <div class="flex justify-between items-end mb-8">
-                    <div>
-                        <h2 class="text-4xl font-black tracking-tighter">History</h2>
-                        <p class="text-xs font-bold uppercase tracking-widest text-zinc-500 mt-1">Game Records</p>
-                    </div>
-                    <button onclick="showSetup()" class="accent-bg w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <h2 class="text-4xl font-black tracking-tighter">Scores</h2>
+                    <button onclick="showTemplatePicker()" class="accent-bg px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg active:scale-90 transition-all">
+                        New Game
                     </button>
                 </div>
-                <div id="history-list" class="space-y-4 pb-32"></div>
+
+                <div id="history-list" class="space-y-3"></div>
             </div>
 
-            <div id="setup-view" class="hidden">
+            <!-- View 2: Template Picker (Sub-view of Scores) -->
+            <div id="score-picker-view" class="hidden">
                 <div class="flex items-center gap-4 mb-8">
-                    <button onclick="showHistory()" class="w-10 h-10 rounded-full glass bg-white/5 border border-white/10 flex items-center justify-center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-                    <h2 class="text-2xl font-black tracking-tight">New Game</h2>
+                    <button onclick="showScoreHistory()" class="w-10 h-10 rounded-full glass bg-white/5 border border-white/10 flex items-center justify-center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+                    <h2 class="text-2xl font-black tracking-tight">Pick Game</h2>
                 </div>
-                <div class="space-y-6 pb-32">
-                    <div>
-                        <label class="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-3 block">Players</label>
-                        <div id="setup-players-list" class="space-y-3"></div>
-                        <button onclick="addPlayerField()" class="w-full py-4 border-2 border-dashed border-white/10 rounded-2xl opacity-40 text-xs font-bold uppercase mt-3">+ Add Player</button>
-                    </div>
-                    <button onclick="startNewGame()" class="accent-bg w-full py-5 rounded-[2rem] font-black text-white text-lg shadow-2xl active:scale-[0.98] transition-transform">START SCORING</button>
-                </div>
+                <div id="score-template-grid" class="grid grid-cols-2 gap-3"></div>
+                <p class="mt-8 text-center text-[10px] font-bold uppercase tracking-widest opacity-20">Edit library in Setup tab</p>
             </div>
 
-            <div id="play-view" class="hidden">
-                 <div class="flex items-center justify-between mb-6">
-                    <button onclick="showHistory()" class="w-10 h-10 rounded-full glass bg-white/5 border border-white/10 flex items-center justify-center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-                    <div class="text-center">
-                        <h3 class="font-black text-xl tracking-tighter uppercase">Scoring</h3>
-                    </div>
-                    <button onclick="resetCurrentScores()" class="opacity-40"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg></button>
+            <!-- View 3: Live Scorecard -->
+            <div id="score-live-view" class="hidden">
+                <div class="flex items-center justify-between mb-4">
+                    <button onclick="showScoreHistory()" class="w-10 h-10 rounded-full glass bg-white/5 border border-white/10 flex items-center justify-center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+                    <h3 id="live-game-title" class="font-black text-xs uppercase tracking-[0.2em] opacity-40 truncate px-4">Scoring</h3>
+                    <button onclick="resetLiveScores()" class="w-10 h-10 flex items-center justify-center opacity-20"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg></button>
                 </div>
-                <div id="score-table-container" class="glass bg-white/5 border border-white/10 rounded-[2rem] overflow-x-auto pb-32"></div>
+                <div id="score-table-container" class="glass bg-white/5 border border-white/10 rounded-[2rem] overflow-x-auto"></div>
             </div>
         </div>
 
-        <!-- SETTINGS TAB -->
+        <!-- SETUP TAB -->
         <div id="settings" class="tab-content p-6 pt-12">
-            <h2 class="text-4xl font-black mb-10 tracking-tighter">Setup</h2>
-            <div class="space-y-10 pb-32">
-                <section>
-                    <div class="flex items-center gap-2 mb-6 opacity-40"><h3 class="text-[10px] uppercase font-black tracking-[0.2em]">Theme</h3></div>
-                    <div id="theme-grid" class="grid grid-cols-5 gap-3"></div>
+            <div id="setup-main-view">
+                <h2 class="text-4xl font-black tracking-tighter mb-8 text-zinc-500">Setup</h2>
+                
+                <section class="mb-10">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-[10px] uppercase font-black tracking-widest opacity-40">Game Library</h3>
+                        <button onclick="showTemplateEditor()" class="accent-text text-[10px] font-black uppercase">+ Add New</button>
+                    </div>
+                    <div id="setup-template-list" class="grid grid-cols-1 gap-2"></div>
                 </section>
-                <section>
-                    <div class="flex items-center gap-2 mb-6 opacity-40"><h3 class="text-[10px] uppercase font-black tracking-[0.2em]">Accent</h3></div>
-                    <div id="accent-grid" class="flex gap-3"></div>
+
+                <section class="mb-10">
+                    <h3 class="text-[10px] uppercase font-black tracking-widest opacity-40 mb-4">Player Roster</h3>
+                    <div id="setup-roster-list" class="space-y-2 mb-3"></div>
+                    <button onclick="addPlayerToRoster()" class="w-full py-3 border-2 border-dashed border-white/10 rounded-xl opacity-30 text-[10px] font-black uppercase tracking-widest">+ Add Player</button>
                 </section>
-                <button onclick="factoryReset()" class="w-full py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-[10px] font-black tracking-widest text-rose-500 uppercase">Clear All Data</button>
+
+                <section class="mb-10">
+                    <h3 class="text-[10px] uppercase font-black tracking-widest opacity-40 mb-4">Visual Theme</h3>
+                    <div class="grid grid-cols-4 gap-3 mb-4" id="theme-grid"></div>
+                    <div class="flex gap-3" id="accent-grid"></div>
+                </section>
+
+                <button onclick="factoryReset()" class="w-full py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-[10px] font-black tracking-widest text-rose-500 uppercase">Factory Reset</button>
+            </div>
+
+            <!-- Template Editor -->
+            <div id="setup-template-editor" class="hidden">
+                <div class="flex items-center gap-4 mb-8">
+                    <button onclick="showSetupMain()" class="w-10 h-10 rounded-full glass bg-white/5 border border-white/10 flex items-center justify-center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+                    <h2 class="text-2xl font-black tracking-tight">Game Template</h2>
+                </div>
+                <div class="space-y-6">
+                    <div>
+                        <label class="text-[10px] uppercase font-bold opacity-40 mb-2 block">Template Name</label>
+                        <input id="new-temp-name" placeholder="e.g. Sushi Go" class="w-full glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] uppercase font-bold opacity-40 mb-2 block">Score Categories</label>
+                        <div id="new-temp-rows" class="space-y-2"></div>
+                        <button onclick="addEditorRow()" class="w-full py-3 border-2 border-dashed border-white/10 rounded-xl opacity-40 text-[10px] font-bold uppercase mt-3">+ Add Row</button>
+                    </div>
+                    <button onclick="saveNewTemplate()" class="accent-bg w-full py-5 rounded-[2rem] font-black text-white shadow-xl">SAVE TEMPLATE</button>
+                </div>
             </div>
         </div>
 
     </div>
 
-    <!-- Floating Navigation -->
-    <div class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-[100]">
-        <nav class="glass bg-zinc-900/60 border border-white/10 h-20 rounded-[2.5rem] flex justify-around items-center px-4 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.5)]">
+    <!-- Navigation -->
+    <div class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-[100]">
+        <nav class="glass bg-zinc-900/60 border border-white/10 h-20 rounded-[2.5rem] flex justify-around items-center px-4 shadow-2xl">
             <button onclick="switchTab('dice')" class="nav-btn flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all" data-tab="dice">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M12 8h.01"/><path d="M8 12h.01"/><path d="M16 12h.01"/><path d="M12 16h.01"/></svg>
-                <span class="text-[8px] font-black uppercase tracking-[0.15em]">Dice</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M12 8h.01"/><path d="M8 12h.01"/><path d="M16 12h.01"/><path d="M12 16h.01"/></svg>
+                <span class="text-[8px] font-black uppercase tracking-widest">Dice</span>
             </button>
             <button onclick="switchTab('selector')" class="nav-btn flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all" data-tab="selector">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
-                <span class="text-[8px] font-black uppercase tracking-[0.15em]">Start</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+                <span class="text-[8px] font-black uppercase tracking-widest">Start</span>
             </button>
             <button onclick="switchTab('scores')" class="nav-btn flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all" data-tab="scores">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
-                <span class="text-[8px] font-black uppercase tracking-[0.15em]">Score</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
+                <span class="text-[8px] font-black uppercase tracking-widest">Score</span>
             </button>
             <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all" data-tab="settings">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.72l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                <span class="text-[8px] font-black uppercase tracking-[0.15em]">Setup</span>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.72l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span class="text-[8px] font-black uppercase tracking-widest">Setup</span>
             </button>
         </nav>
     </div>
 
     <script>
-        // --- CONFIG & STATE ---
-        const THEMES = {
-            oled: { name: 'OLED', bg: '#000000', card: 'rgba(24, 24, 27, 0.4)', border: 'rgba(39, 39, 42, 0.5)', text: '#ffffff' },
-            dark: { name: 'Midnight', bg: '#020617', card: 'rgba(15, 23, 42, 0.4)', border: 'rgba(30, 41, 59, 0.5)', text: '#f8fafc' },
-            nord: { name: 'Nordic', bg: '#2e3440', card: 'rgba(59, 66, 82, 0.4)', border: 'rgba(76, 86, 106, 0.5)', text: '#eceff4' },
-            sunset: { name: 'Sunset', bg: '#1a1625', card: 'rgba(45, 36, 56, 0.4)', border: 'rgba(67, 54, 84, 0.5)', text: '#f3f1f5' },
-            light: { name: 'Paper', bg: '#fafafa', card: 'rgba(255, 255, 255, 0.6)', border: 'rgba(228, 228, 231, 0.8)', text: '#09090b' }
-        };
-
-        const ACCENTS = {
-            indigo: '#6366f1',
-            emerald: '#10b981',
-            rose: '#f43f5e',
-            amber: '#f59e0b',
-            cyan: '#06b6d4'
-        };
+        // --- DATA ---
+        const THEMES = { oled: '#000000', dark: '#020617', nord: '#2e3440', paper: '#fafafa' };
+        const ACCENTS = { indigo: '#6366f1', emerald: '#10b981', rose: '#f43f5e', amber: '#f59e0b' };
 
         let state = {
             activeTab: 'dice',
-            theme: 'oled',
-            accent: 'indigo',
+            theme: localStorage.getItem('bgt_theme') || 'oled',
+            accent: localStorage.getItem('bgt_accent') || 'indigo',
+            templates: JSON.parse(localStorage.getItem('bgt_templates') || '[{"id":"quick","name":"Standard","rows":["Points"]}]'),
             sessions: JSON.parse(localStorage.getItem('bgt_sessions') || '[]'),
-            currentSessionId: null,
-            setupPlayers: ['Player 1', 'Player 2']
+            roster: JSON.parse(localStorage.getItem('bgt_roster') || '["Player 1", "Player 2"]'),
+            
+            // Transient state
+            activeSessionId: null,
+            editorRows: ['Victory Points']
         };
 
-        // --- CORE UTILS ---
-        const triggerHaptic = (ms = 10) => navigator.vibrate && navigator.vibrate(ms);
-        const saveState = () => localStorage.setItem('bgt_sessions', JSON.stringify(state.sessions));
+        const sync = () => {
+            localStorage.setItem('bgt_templates', JSON.stringify(state.templates));
+            localStorage.setItem('bgt_sessions', JSON.stringify(state.sessions));
+            localStorage.setItem('bgt_roster', JSON.stringify(state.roster));
+        };
 
+        const triggerHaptic = (ms=10) => navigator.vibrate && navigator.vibrate(ms);
+
+        // --- UI ROUTING ---
         function switchTab(tabId) {
             state.activeTab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -224,348 +208,270 @@
                 const isActive = btn.dataset.tab === tabId;
                 btn.style.opacity = isActive ? '1' : '0.4';
                 btn.style.color = isActive ? ACCENTS[state.accent] : 'inherit';
-                btn.style.backgroundColor = isActive ? 'rgba(255,255,255,0.05)' : 'transparent';
-                btn.classList.toggle('scale-110', isActive);
+                btn.classList.toggle('scale-105', isActive);
             });
 
-            if(tabId === 'scores') renderHistory();
+            if(tabId === 'scores') showScoreHistory();
+            if(tabId === 'settings') showSetupMain();
             if(tabId === 'selector') initPointerLogic();
         }
 
         function applyTheme() {
-            const t = THEMES[state.theme];
-            const a = ACCENTS[state.accent];
-            document.body.style.backgroundColor = t.bg;
-            document.body.style.color = t.text;
-            document.getElementById('bg-glow-1').style.backgroundColor = a;
-            document.getElementById('bg-glow-2').style.backgroundColor = a;
-            
-            document.querySelectorAll('.accent-bg').forEach(el => el.style.backgroundColor = a);
-            document.querySelectorAll('.accent-text').forEach(el => el.style.color = a);
-            
-            // Re-render nav colors
+            const bg = THEMES[state.theme];
+            const acc = ACCENTS[state.accent];
+            const isLight = state.theme === 'paper';
+            document.body.style.backgroundColor = bg;
+            document.body.style.color = isLight ? '#18181b' : '#ffffff';
+            document.getElementById('bg-glow-1').style.backgroundColor = acc;
+            document.getElementById('bg-glow-2').style.backgroundColor = acc;
+            document.querySelectorAll('.accent-bg').forEach(el => el.style.backgroundColor = acc);
+            document.querySelectorAll('.accent-text').forEach(el => el.style.color = acc);
             switchTab(state.activeTab);
         }
 
-        // --- DICE LOGIC ---
+        // --- DICE ---
         function rollDice() {
             const qty = parseInt(document.getElementById('dice-qty').value) || 1;
             const faces = parseInt(document.getElementById('dice-faces').value) || 6;
             const container = document.getElementById('dice-results');
             const btn = document.getElementById('roll-btn');
-            
-            triggerHaptic(20);
-            btn.disabled = true;
-            btn.innerText = 'ROLLING...';
-            btn.style.opacity = '0.5';
-
+            triggerHaptic(20); btn.disabled = true; btn.style.opacity = '0.4';
             let count = 0;
-            const interval = setInterval(() => {
+            const itv = setInterval(() => {
                 container.innerHTML = '';
-                for(let i=0; i<qty; i++) {
+                for(let i=0; i<qty; i++){
                     const val = Math.floor(Math.random() * faces) + 1;
                     const die = document.createElement('div');
-                    die.className = `w-20 h-20 rounded-3xl glass bg-white/5 border border-white/10 flex items-center justify-center text-4xl font-black shadow-lg`;
+                    die.className = 'w-16 h-16 rounded-2xl glass bg-white/5 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg';
                     die.innerText = val;
                     container.appendChild(die);
                 }
-                if(++count > 12) {
-                    clearInterval(interval);
-                    btn.disabled = false;
-                    btn.innerText = 'ROLL DICE';
-                    btn.style.opacity = '1';
-                    triggerHaptic([30, 50, 30]);
-                }
-            }, 50);
+                if(++count > 10){ clearInterval(itv); btn.disabled = false; btn.style.opacity = '1'; triggerHaptic(50); }
+            }, 60);
         }
+        function quickRoll(f){ document.getElementById('dice-faces').value = f; rollDice(); }
 
-        function quickRoll(faces) {
-            document.getElementById('dice-faces').value = faces;
-            rollDice();
-        }
-
-        // --- SELECTOR LOGIC ---
+        // --- FIRST PLAYER ---
         let activePointers = {};
-        let selectorTimer = null;
-        let selectorStatus = 'waiting';
-
         function initPointerLogic() {
             const el = document.getElementById('selector');
-            el.innerHTML = `
-                <div id="selector-hint" class="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 text-center p-12">
-                    <div class="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 glass">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
-                    </div>
-                    <p class="text-2xl font-black mb-2 tracking-tight text-white">Initiative</p>
-                    <p class="text-sm opacity-60">Everyone place a finger on the screen</p>
+            el.innerHTML = `<div id="selector-hint" class="absolute inset-0 flex flex-col items-center justify-center text-zinc-500 text-center p-12 pointer-events-none">
+                <div class="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 glass opacity-40">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
                 </div>
-                <div id="selector-countdown" class="absolute inset-0 flex items-center justify-center text-[150px] font-black opacity-10 pointer-events-none"></div>
-            `;
-
-            el.addEventListener('pointerdown', e => {
-                if(selectorStatus === 'complete') return;
-                const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+                <p class="text-2xl font-black mb-1 text-white tracking-tight">First Player</p>
+                <p class="text-xs opacity-60">Place fingers to start</p>
+            </div><div id="selector-countdown" class="absolute inset-0 flex items-center justify-center text-[120px] font-black opacity-10 pointer-events-none"></div>`;
+            el.onpointerdown = e => {
+                const colors = Object.values(ACCENTS);
                 const color = colors[e.pointerId % colors.length];
-                
-                activePointers[e.pointerId] = { x: e.clientX, y: e.clientY, color };
+                activePointers[e.pointerId] = { x: e.clientX, y: e.clientY };
                 const ring = document.createElement('div');
-                ring.id = `pointer-${e.pointerId}`;
-                ring.className = 'pointer-ring';
-                ring.style.left = e.clientX + 'px';
-                ring.style.top = e.clientY + 'px';
-                ring.style.backgroundColor = color;
-                el.appendChild(ring);
-                
+                ring.id = `ptr-${e.pointerId}`; ring.className = 'pointer-ring';
+                ring.style.left = e.clientX + 'px'; ring.style.top = e.clientY + 'px';
+                ring.style.backgroundColor = color; el.appendChild(ring);
                 document.getElementById('selector-hint').style.display = 'none';
                 triggerHaptic(10);
-                checkSelectorStart();
-            });
-
-            el.addEventListener('pointermove', e => {
-                if(activePointers[e.pointerId]) {
-                    const ring = document.getElementById(`pointer-${e.pointerId}`);
-                    if(ring) {
-                        ring.style.left = e.clientX + 'px';
-                        ring.style.top = e.clientY + 'px';
-                    }
-                }
-            });
-
-            el.addEventListener('pointerup', removePointer);
-            el.addEventListener('pointercancel', removePointer);
+                if(Object.keys(activePointers).length >= 2) startSelectorCountdown();
+            };
+            el.onpointermove = e => { if(activePointers[e.pointerId]) { 
+                const r = document.getElementById(`ptr-${e.pointerId}`);
+                r.style.left = e.clientX + 'px'; r.style.top = e.clientY + 'px';
+            }};
+            el.onpointerup = el.onpointercancel = e => {
+                delete activePointers[e.pointerId];
+                const r = document.getElementById(`ptr-${e.pointerId}`); if(r) r.remove();
+                if(Object.keys(activePointers).length === 0) document.getElementById('selector-hint').style.display = 'flex';
+            };
         }
-
-        function removePointer(e) {
-            delete activePointers[e.pointerId];
-            const ring = document.getElementById(`pointer-${e.pointerId}`);
-            if(ring) ring.remove();
-            
-            if(Object.keys(activePointers).length < 2 && selectorStatus === 'counting') {
-                clearInterval(selectorTimer);
-                selectorStatus = 'waiting';
-                document.getElementById('selector-countdown').innerText = '';
-            }
-            if(Object.keys(activePointers).length === 0) {
-                selectorStatus = 'waiting';
-                document.getElementById('selector-hint').style.display = 'flex';
-            }
+        function startSelectorCountdown() {
+            let t = 3; const cd = document.getElementById('selector-countdown');
+            cd.innerText = t;
+            const itv = setInterval(() => {
+                t--; if(t <= 0) { clearInterval(itv); finishSelector(); }
+                else { cd.innerText = t; triggerHaptic(20); }
+            }, 800);
         }
-
-        function checkSelectorStart() {
-            if(selectorStatus === 'waiting' && Object.keys(activePointers).length >= 2) {
-                selectorStatus = 'counting';
-                let time = 3;
-                document.getElementById('selector-countdown').innerText = time;
-                selectorTimer = setInterval(() => {
-                    time--;
-                    if(time <= 0) {
-                        clearInterval(selectorTimer);
-                        finishSelector();
-                    } else {
-                        document.getElementById('selector-countdown').innerText = time;
-                        triggerHaptic(20);
-                    }
-                }, 1000);
-            }
-        }
-
         function finishSelector() {
-            selectorStatus = 'complete';
             const ids = Object.keys(activePointers);
-            const winnerId = ids[Math.floor(Math.random() * ids.length)];
-            
+            const win = ids[Math.floor(Math.random()*ids.length)];
             ids.forEach(id => {
-                const ring = document.getElementById(`pointer-${id}`);
-                if(id == winnerId) ring.classList.add('winner-ring');
-                else ring.classList.add('fade-out');
+                const r = document.getElementById(`ptr-${id}`);
+                if(id == win) r.classList.add('winner-ring'); else r.classList.add('fade-out');
             });
-            
             document.getElementById('selector-countdown').innerText = 'GO!';
             triggerHaptic([100, 50, 100]);
         }
 
-        // --- SCORECARD LOGIC ---
-        function showHistory() {
-            document.getElementById('history-view').classList.remove('hidden');
-            document.getElementById('setup-view').classList.add('hidden');
-            document.getElementById('play-view').classList.add('hidden');
-            renderHistory();
+        // --- SCORES LOGIC ---
+        function showScoreHistory() {
+            document.getElementById('score-history-view').classList.remove('hidden');
+            document.getElementById('score-picker-view').classList.add('hidden');
+            document.getElementById('score-live-view').classList.add('hidden');
+            renderHistoryList();
         }
 
-        function showSetup() {
-            document.getElementById('history-view').classList.add('hidden');
-            document.getElementById('setup-view').classList.remove('hidden');
-            document.getElementById('play-view').classList.add('hidden');
-            renderSetupFields();
+        function showTemplatePicker() {
+            document.getElementById('score-history-view').classList.add('hidden');
+            document.getElementById('score-picker-view').classList.remove('hidden');
+            document.getElementById('score-live-view').classList.add('hidden');
+            renderTemplatePickerGrid();
         }
 
-        function renderHistory() {
+        function renderTemplatePickerGrid() {
+            const grid = document.getElementById('score-template-grid');
+            grid.innerHTML = state.templates.map(t => `
+                <div onclick="startNewGameFromTemplate('${t.id}')" class="glass bg-white/5 p-5 rounded-[2rem] border border-white/10 active:scale-95 transition-all flex flex-col items-center justify-center text-center gap-2">
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Game</div>
+                    <div class="font-black text-sm uppercase tracking-tight">${t.name}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderHistoryList() {
             const list = document.getElementById('history-list');
-            if(state.sessions.length === 0) {
-                list.innerHTML = `<div class="mt-12 text-center p-12 rounded-3xl border-2 border-dashed border-white/5 opacity-40">No records found</div>`;
+            if(!state.sessions.length) {
+                list.innerHTML = `<div class="p-12 border-2 border-dashed border-white/5 rounded-[2rem] text-center opacity-30 text-xs font-black uppercase">No Recent Sessions</div>`;
                 return;
             }
             list.innerHTML = state.sessions.map(s => `
-                <div onclick="openSession('${s.id}')" class="glass bg-white/5 p-5 rounded-[2rem] border border-white/10 active:scale-[0.98] transition-all">
-                    <div class="flex justify-between mb-2">
-                        <span class="font-black text-lg">${new Date(s.timestamp).toLocaleDateString()}</span>
-                        <span class="text-[10px] opacity-40 font-bold uppercase pt-1">${s.players.length} Players</span>
+                <div onclick="resumeSession('${s.id}')" class="glass bg-white/5 p-5 rounded-[2rem] border border-white/10 active:scale-95 transition-all flex justify-between items-center">
+                    <div class="truncate pr-4">
+                        <div class="font-black text-sm truncate">${s.name}</div>
+                        <div class="text-[10px] opacity-40 font-bold uppercase tracking-widest mt-0.5">${new Date(s.timestamp).toLocaleDateString()} • ${s.players.length} Players</div>
                     </div>
-                    <div class="flex gap-2 overflow-hidden">
-                        ${s.players.map(p => `<span class="text-[10px] px-2 py-1 rounded-full bg-white/5 border border-white/5 font-bold uppercase">${p.name}</span>`).join('')}
-                    </div>
+                    <div class="text-[10px] font-black opacity-30 tracking-widest">RESUME</div>
                 </div>
             `).join('');
         }
 
-        function renderSetupFields() {
-            const list = document.getElementById('setup-players-list');
-            list.innerHTML = state.setupPlayers.map((p, i) => `
-                <div class="flex gap-3">
-                    <input value="${p}" oninput="state.setupPlayers[${i}] = this.value" placeholder="Player Name" class="flex-1 glass bg-white/5 p-4 rounded-2xl border border-white/10 outline-none font-bold">
-                    <button onclick="removePlayerField(${i})" class="p-2 text-rose-500/60"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button>
-                </div>
-            `).join('');
-        }
-
-        function addPlayerField() {
-            state.setupPlayers.push('');
-            renderSetupFields();
-        }
-
-        function removePlayerField(i) {
-            state.setupPlayers.splice(i, 1);
-            renderSetupFields();
-        }
-
-        function startNewGame() {
-            const id = Date.now().toString();
-            const players = state.setupPlayers.filter(p => p.trim()).map(n => ({ id: Math.random().toString(36).substr(2, 9), name: n }));
-            if(players.length === 0) return;
+        function startNewGameFromTemplate(tId) {
+            const t = state.templates.find(x => x.id === tId);
+            const players = state.roster.filter(p => p.trim()).map(n => ({ id: Math.random().toString(36).substr(2,4), name: n }));
+            if(!players.length) { switchTab('settings'); alert('Add players to your roster first!'); return; }
             
-            const newSession = {
-                id,
-                timestamp: Date.now(),
-                players,
-                scores: players.reduce((acc, p) => ({ ...acc, [p.id]: [0] }), {}),
-                rows: ['Points']
+            const session = {
+                id: Date.now().toString(), name: t.name, timestamp: Date.now(),
+                rows: [...t.rows], players,
+                scores: players.reduce((acc, p) => ({ ...acc, [p.id]: Array(t.rows.length).fill(0) }), {})
             };
-            
-            state.sessions.unshift(newSession);
-            saveState();
-            openSession(id);
+            state.sessions.unshift(session);
+            sync();
+            resumeSession(session.id);
         }
 
-        function openSession(id) {
-            state.currentSessionId = id;
-            document.getElementById('history-view').classList.add('hidden');
-            document.getElementById('setup-view').classList.add('hidden');
-            document.getElementById('play-view').classList.remove('hidden');
+        function resumeSession(id) {
+            state.activeSessionId = id;
+            const s = state.sessions.find(x => x.id === id);
+            document.getElementById('score-history-view').classList.add('hidden');
+            document.getElementById('score-picker-view').classList.add('hidden');
+            document.getElementById('score-live-view').classList.remove('hidden');
+            document.getElementById('live-game-title').innerText = s.name;
             renderScoreTable();
         }
 
         function renderScoreTable() {
-            const s = state.sessions.find(x => x.id === state.currentSessionId);
+            const s = state.sessions.find(x => x.id === state.activeSessionId);
             const container = document.getElementById('score-table-container');
-            
-            let html = `<table class="w-full border-collapse">
-                <thead><tr class="border-b border-white/5 bg-white/5">
-                    <th class="p-4 text-left opacity-30 text-[9px] uppercase font-bold tracking-widest">Row</th>
-                    ${s.players.map(p => `<th class="p-4 text-center border-l border-white/5 font-black text-sm">${p.name}</th>`).join('')}
-                </tr></thead>
-                <tbody>`;
-
+            let html = `<table class="w-full border-collapse"><thead><tr class="border-b border-white/5 bg-white/5">
+                <th class="p-4 text-left opacity-30 text-[9px] uppercase font-black tracking-widest">Row</th>
+                ${s.players.map(p => `<th class="p-4 text-center border-l border-white/5 font-black text-xs uppercase">${p.name}</th>`).join('')}
+                </tr></thead><tbody>`;
             s.rows.forEach((row, rIdx) => {
-                html += `<tr class="border-b border-white/5">
-                    <td class="p-4 text-xs font-bold opacity-50 bg-white/[0.02]">${row}</td>
+                html += `<tr class="border-b border-white/5"><td class="p-4 text-[10px] font-black uppercase opacity-40 bg-white/[0.02]">${row}</td>
                     ${s.players.map(p => `
                         <td class="p-0 border-l border-white/5">
                             <input type="text" inputMode="decimal" value="${s.scores[p.id][rIdx] || ''}" 
-                                onblur="updateScoreValue('${p.id}', ${rIdx}, this.value)"
-                                class="w-full h-16 bg-transparent text-center font-black text-xl outline-none focus:bg-white/[0.03]">
+                                onblur="updateLiveScore('${p.id}', ${rIdx}, this.value)"
+                                class="score-input w-full h-14 bg-transparent text-center font-black text-lg outline-none transition-colors">
                         </td>
-                    `).join('')}
-                </tr>`;
+                    `).join('')}</tr>`;
             });
-
-            const totals = s.players.map(p => {
-                const sum = s.scores[p.id].reduce((a, b) => a + (parseFloat(b) || 0), 0);
-                return { id: p.id, total: sum };
-            });
-
-            html += `</tbody><tfoot class="bg-white/10 font-black"><tr>
-                <td class="p-6 text-xs uppercase tracking-widest opacity-60">Total</td>
-                ${totals.map(t => `<td class="p-6 text-center text-2xl border-l border-white/5">${t.total}</td>`).join('')}
-            </tr></tfoot></table>
-            <button onclick="addRowToCurrent()" class="w-full py-4 text-xs font-bold opacity-30 uppercase">+ Add Row</button>`;
-            
+            const totals = s.players.map(p => ({ total: s.scores[p.id].reduce((a,b)=>a+(parseFloat(b)||0), 0) }));
+            html += `</tbody><tfoot class="bg-white/10 font-black"><tr><td class="p-6 text-[10px] uppercase tracking-widest opacity-60">Total</td>
+                ${totals.map(t => `<td class="p-6 text-center text-xl border-l border-white/5">${t.total}</td>`).join('')}
+            </tr></tfoot></table>`;
             container.innerHTML = html;
         }
 
-        function updateScoreValue(pId, rIdx, val) {
-            const s = state.sessions.find(x => x.id === state.currentSessionId);
-            try {
-                // Quick math eval
-                const clean = val.replace(/[^0-9+\-*/.]/g, '');
-                const result = clean ? new Function(`return ${clean}`)() : 0;
-                s.scores[pId][rIdx] = result;
-            } catch(e) { s.scores[pId][rIdx] = 0; }
-            saveState();
-            renderScoreTable();
+        function updateLiveScore(pId, rIdx, val) {
+            const s = state.sessions.find(x => x.id === state.activeSessionId);
+            try { const clean = val.replace(/[^0-9+\-*/.]/g, ''); s.scores[pId][rIdx] = clean ? eval(clean) : 0; } catch(e) { s.scores[pId][rIdx] = 0; }
+            sync(); renderScoreTable();
         }
 
-        function addRowToCurrent() {
-            const s = state.sessions.find(x => x.id === state.currentSessionId);
-            s.rows.push(`Round ${s.rows.length + 1}`);
-            s.players.forEach(p => s.scores[p.id].push(0));
-            saveState();
-            renderScoreTable();
+        function resetLiveScores() { if(confirm('Clear all scores for this game?')) {
+            const s = state.sessions.find(x => x.id === state.activeSessionId);
+            Object.keys(s.scores).forEach(k => s.scores[k] = Array(s.rows.length).fill(0));
+            sync(); renderScoreTable();
+        }}
+
+        // --- SETUP LOGIC ---
+        function showSetupMain() {
+            document.getElementById('setup-main-view').classList.remove('hidden');
+            document.getElementById('setup-template-editor').classList.add('hidden');
+            renderSetupElements();
         }
 
-        function resetCurrentScores() {
-            if(!confirm('Clear all scores for this game?')) return;
-            const s = state.sessions.find(x => x.id === state.currentSessionId);
-            s.rows = ['Points'];
-            s.players.forEach(p => s.scores[p.id] = [0]);
-            saveState();
-            renderScoreTable();
-        }
-
-        // --- SETTINGS LOGIC ---
-        function renderSettings() {
+        function renderSetupElements() {
+            // Templates
+            const tList = document.getElementById('setup-template-list');
+            tList.innerHTML = state.templates.map(t => `
+                <div class="glass bg-white/5 p-4 rounded-2xl border border-white/10 flex justify-between items-center group">
+                    <div class="flex flex-col">
+                        <div class="text-xs font-black uppercase tracking-widest">${t.name}</div>
+                        <div class="text-[9px] opacity-40 font-bold uppercase">${t.rows.length} Categories</div>
+                    </div>
+                    <button onclick="deleteTemplate('${t.id}')" class="opacity-20 group-hover:opacity-100 p-2"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button>
+                </div>
+            `).join('');
+            // Roster
+            const rList = document.getElementById('setup-roster-list');
+            rList.innerHTML = state.roster.map((p, i) => `
+                <div class="flex gap-2">
+                    <input value="${p}" oninput="state.roster[${i}]=this.value; sync()" class="flex-1 glass bg-white/5 p-3 rounded-xl border border-white/10 text-xs font-bold">
+                    <button onclick="state.roster.splice(${i},1); sync(); renderSetupElements()" class="opacity-20 p-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                </div>
+            `).join('');
+            // Themes
             const tGrid = document.getElementById('theme-grid');
-            tGrid.innerHTML = Object.entries(THEMES).map(([k, v]) => `
-                <button onclick="setTheme('${k}')" class="h-14 rounded-2xl border-2 flex items-center justify-center transition-all ${state.theme === k ? 'border-white scale-105' : 'border-transparent opacity-60'}" style="background-color: ${v.bg}">
-                    ${k === 'light' ? '☀️' : '🌙'}
-                </button>
-            `).join('');
-
+            tGrid.innerHTML = Object.entries(THEMES).map(([k, v]) => `<button onclick="setTheme('${k}')" class="h-10 rounded-xl border-2 transition-all ${state.theme === k ? 'border-white' : 'border-transparent opacity-40'}" style="background-color: ${v}"></button>`).join('');
             const aGrid = document.getElementById('accent-grid');
-            aGrid.innerHTML = Object.entries(ACCENTS).map(([k, v]) => `
-                <button onclick="setAccent('${k}')" class="w-full h-12 rounded-2xl flex items-center justify-center transition-all ${state.accent === k ? 'ring-4 ring-white/20 scale-105' : 'opacity-80'}" style="background-color: ${v}">
-                    ${state.accent === k ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}
-                </button>
+            aGrid.innerHTML = Object.entries(ACCENTS).map(([k, v]) => `<button onclick="setAccent('${k}')" class="flex-1 h-10 rounded-xl border-2 transition-all ${state.accent === k ? 'border-white' : 'border-transparent opacity-40'}" style="background-color: ${v}"></button>`).join('');
+        }
+
+        function showTemplateEditor() {
+            state.editorRows = ['Points'];
+            document.getElementById('new-temp-name').value = '';
+            document.getElementById('setup-main-view').classList.add('hidden');
+            document.getElementById('setup-template-editor').classList.remove('hidden');
+            renderEditorRows();
+        }
+
+        function renderEditorRows() {
+            const list = document.getElementById('new-temp-rows');
+            list.innerHTML = state.editorRows.map((r, i) => `
+                <div class="flex gap-2">
+                    <input value="${r}" oninput="state.editorRows[${i}]=this.value" class="flex-1 glass bg-white/5 p-3 rounded-xl border border-white/10 text-xs font-bold">
+                    <button onclick="state.editorRows.splice(${i},1); renderEditorRows()" class="opacity-20 p-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                </div>
             `).join('');
         }
 
-        function setTheme(k) { state.theme = k; applyTheme(); renderSettings(); localStorage.setItem('bgt_theme', k); }
-        function setAccent(k) { state.accent = k; applyTheme(); renderSettings(); localStorage.setItem('bgt_accent', k); }
-
-        function factoryReset() {
-            if(confirm('Wipe all history and settings?')) {
-                localStorage.clear();
-                window.location.reload();
-            }
+        function addEditorRow() { state.editorRows.push(''); renderEditorRows(); }
+        function addPlayerToRoster() { state.roster.push(`Player ${state.roster.length+1}`); sync(); renderSetupElements(); }
+        function saveNewTemplate() {
+            const name = document.getElementById('new-temp-name').value.trim() || 'New Game';
+            const rows = state.editorRows.filter(r => r.trim());
+            state.templates.push({ id: Date.now().toString(), name, rows });
+            sync(); showSetupMain();
         }
+        function deleteTemplate(id) { if(confirm('Delete template?')) { state.templates = state.templates.filter(t=>t.id!==id); sync(); renderSetupElements(); }}
+        function setTheme(k) { state.theme = k; applyTheme(); renderSetupElements(); localStorage.setItem('bgt_theme', k); }
+        function setAccent(k) { state.accent = k; applyTheme(); renderSetupElements(); localStorage.setItem('bgt_accent', k); }
+        function factoryReset() { if(confirm('Wipe all board game data?')) { localStorage.clear(); window.location.reload(); } }
 
-        // --- INIT ---
-        window.onload = () => {
-            state.theme = localStorage.getItem('bgt_theme') || 'oled';
-            state.accent = localStorage.getItem('bgt_accent') || 'indigo';
-            applyTheme();
-            renderSettings();
-            switchTab('dice');
-        };
+        window.onload = applyTheme;
     </script>
 </body>
 </html>
