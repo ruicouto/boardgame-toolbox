@@ -1,0 +1,528 @@
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { 
+  Dices, 
+  Hand, 
+  TableProperties, 
+  Plus, 
+  Trash2, 
+  Settings, 
+  RotateCcw, 
+  ChevronLeft, 
+  Trophy, 
+  User,
+  Palette,
+  Check,
+  Moon,
+  Sun,
+  Rows,
+  Sparkles
+} from 'lucide-react';
+
+// --- THEME DEFINITIONS ---
+const THEMES = {
+  oled: { name: 'OLED Black', bg: 'bg-black', glass: 'bg-zinc-900/60', card: 'bg-zinc-900/40', border: 'border-zinc-800/50', text: 'text-zinc-100', subtext: 'text-zinc-500' },
+  dark: { name: 'Midnight', bg: 'bg-slate-950', glass: 'bg-slate-900/60', card: 'bg-slate-900/40', border: 'border-slate-800/50', text: 'text-slate-100', subtext: 'text-slate-500' },
+  nordic: { name: 'Nordic', bg: 'bg-[#2e3440]', glass: 'bg-[#3b4252]/60', card: 'bg-[#3b4252]/40', border: 'border-[#4c566a]/50', text: 'text-[#eceff4]', subtext: 'text-[#9ca3af]' },
+  sunset: { name: 'Sunset', bg: 'bg-[#1a1625]', glass: 'bg-[#2d2438]/60', card: 'bg-[#2d2438]/40', border: 'border-[#433654]/50', text: 'text-[#f3f1f5]', subtext: 'text-[#8e81a3]' },
+  light: { name: 'Paper', bg: 'bg-zinc-50', glass: 'bg-white/70', card: 'bg-white/40', border: 'border-zinc-200/50', text: 'text-zinc-900', subtext: 'text-zinc-400' }
+};
+
+const ACCENTS = {
+  indigo: { color: '#6366f1', glow: 'shadow-indigo-500/20' },
+  emerald: { color: '#10b981', glow: 'shadow-emerald-500/20' },
+  rose: { color: '#f43f5e', glow: 'shadow-rose-500/20' },
+  amber: { color: '#f59e0b', glow: 'shadow-amber-500/20' },
+  cyan: { color: '#06b6d4', glow: 'shadow-cyan-500/20' },
+};
+
+// --- UTILITIES ---
+const evaluateMath = (input) => {
+  if (!input) return '';
+  const str = input.toString();
+  if (/^-?\d*\.?\d+$/.test(str)) return str;
+  try {
+    const sanitized = str.replace(/[^0-9+\-*/.]/g, '');
+    if (!sanitized) return '';
+    const result = new Function(`return ${sanitized}`)();
+    return Number.isFinite(result) ? Math.round(result * 100) / 100 : str;
+  } catch (e) { return str; }
+};
+
+const triggerHaptic = (pattern = 50) => {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    navigator.vibrate(pattern);
+  }
+};
+
+function useLocalStorage(key, initialValue) {
+  const [storedValue, setStoredValue] = useState(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) { return initialValue; }
+  });
+  const setValue = (value) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {}
+  };
+  return [storedValue, setValue];
+}
+
+// --- MODULE: DICE ---
+const DiceModule = ({ theme, accent }) => {
+  const [qty, setQty] = useState(1);
+  const [faces, setFaces] = useState(6);
+  const [isRolling, setIsRolling] = useState(false);
+  const [currentResult, setCurrentResult] = useState([]);
+
+  const rollDice = (rollQty = qty, rollFaces = faces) => {
+    triggerHaptic(20);
+    setIsRolling(true);
+    let count = 0;
+    const interval = setInterval(() => {
+      setCurrentResult(Array.from({ length: rollQty }, () => Math.floor(Math.random() * rollFaces) + 1));
+      if (++count > 12) {
+        clearInterval(interval);
+        setCurrentResult(Array.from({ length: rollQty }, () => Math.floor(Math.random() * rollFaces) + 1));
+        setIsRolling(false);
+        triggerHaptic([30, 50, 30]);
+      }
+    }, 50);
+  };
+
+  return (
+    <div className={`flex flex-col h-full p-6 pt-12 overflow-y-auto ${theme.text}`}>
+      <div className="flex items-center gap-2 mb-8 justify-center opacity-80 uppercase tracking-[0.2em] font-bold text-xs">
+        <Sparkles size={14} style={{ color: accent.color }} />
+        <span>Randomizer</span>
+      </div>
+
+      <div className="grid grid-cols-4 gap-3 mb-8">
+        {[6, 8, 12, 20].map(f => (
+          <button 
+            key={f} 
+            onClick={() => { setFaces(f); rollDice(qty, f); }} 
+            className={`${theme.card} backdrop-blur-md p-4 rounded-2xl border ${theme.border} font-bold transition-all active:scale-95`}
+          >
+            d{f}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className={`${theme.card} backdrop-blur-md rounded-2xl p-4 border ${theme.border}`}>
+          <label className="block text-[10px] uppercase tracking-widest opacity-40 mb-2 font-bold">Quantity</label>
+          <input type="number" value={qty} onChange={e => setQty(Math.max(1, parseInt(e.target.value)||1))} className="w-full bg-transparent text-3xl font-black outline-none" />
+        </div>
+        <div className={`${theme.card} backdrop-blur-md rounded-2xl p-4 border ${theme.border}`}>
+          <label className="block text-[10px] uppercase tracking-widest opacity-40 mb-2 font-bold">Faces</label>
+          <input type="number" value={faces} onChange={e => setFaces(Math.max(2, parseInt(e.target.value)||2))} className="w-full bg-transparent text-3xl font-black outline-none" />
+        </div>
+      </div>
+
+      <button 
+        onClick={() => rollDice()} 
+        disabled={isRolling} 
+        style={{ backgroundColor: accent.color }} 
+        className={`w-full py-5 rounded-3xl text-xl font-black text-white shadow-2xl transition-all active:scale-[0.98] ${isRolling ? 'opacity-50' : 'hover:opacity-90'} ${accent.glow}`}
+      >
+        {isRolling ? 'ROLLING...' : 'ROLL DICE'}
+      </button>
+
+      <div className="flex flex-wrap justify-center gap-4 mt-12 pb-24">
+        {currentResult.map((r, i) => (
+          <div key={i} className={`w-20 h-20 rounded-3xl ${theme.glass} backdrop-blur-xl border ${theme.border} flex items-center justify-center text-4xl font-black shadow-lg animate-in zoom-in duration-300`}>
+            {r}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// --- MODULE: FIRST PLAYER ---
+const FirstPlayerModule = ({ isActive, theme, accent }) => {
+  const [pointers, setPointers] = useState({});
+  const [status, setStatus] = useState('waiting');
+  const [winner, setWinner] = useState(null);
+  const [countdown, setCountdown] = useState(3);
+  const timerRef = useRef(null);
+
+  const startCountdown = useCallback(() => {
+    setStatus('counting');
+    setCountdown(3);
+    let count = 3;
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setCountdown(--count);
+      if (count <= 0) {
+        clearInterval(timerRef.current);
+        const ids = Object.keys(pointers);
+        if (ids.length > 0) {
+          setWinner(ids[Math.floor(Math.random() * ids.length)]);
+          setStatus('complete');
+          triggerHaptic([100, 50, 100]);
+        } else setStatus('waiting');
+      } else triggerHaptic(20);
+    }, 1000);
+  }, [pointers]);
+
+  useEffect(() => {
+    const count = Object.keys(pointers).length;
+    if (status === 'waiting' && count >= 2) startCountdown();
+    else if (status === 'counting' && count < 2) { clearInterval(timerRef.current); setStatus('waiting'); }
+  }, [pointers, status, startCountdown]);
+
+  return (
+    <div className="relative w-full h-full touch-none overflow-hidden" 
+      onPointerDown={e => {
+        if (status === 'complete') return;
+        const color = COLORS[e.pointerId % COLORS.length];
+        setPointers(p => ({ ...p, [e.pointerId]: { x: e.clientX, y: e.clientY, color } }));
+        triggerHaptic(10);
+      }}
+      onPointerMove={e => {
+        if (pointers[e.pointerId]) setPointers(p => ({ ...p, [e.pointerId]: { ...p[e.pointerId], x: e.clientX, y: e.clientY } }));
+      }}
+      onPointerUp={e => {
+        setPointers(p => { const n = {...p}; delete n[e.pointerId]; return n; });
+        if (status === 'complete') { setStatus('waiting'); setWinner(null); }
+      }}
+    >
+      {Object.keys(pointers).length === 0 && (
+        <div className={`absolute inset-0 flex flex-col items-center justify-center ${theme.subtext} text-center p-12 animate-in fade-in duration-700`}>
+          <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 backdrop-blur-md">
+            <Hand size={40} className="opacity-40" />
+          </div>
+          <p className="text-2xl font-black mb-2 tracking-tight">Initiative</p>
+          <p className="text-sm opacity-60 max-w-[200px] leading-relaxed">Everyone place a finger on the screen to choose a starter</p>
+        </div>
+      )}
+      {status === 'counting' && <div className="absolute inset-0 flex items-center justify-center text-[180px] font-black opacity-10 select-none animate-pulse">{countdown}</div>}
+      {Object.entries(pointers).map(([id, p]) => (
+        <div key={id} style={{ left: p.x, top: p.y, backgroundColor: status === 'complete' && winner === id ? '#fff' : p.color }}
+          className={`absolute w-32 h-32 -ml-16 -mt-16 rounded-full border-[6px] border-white/30 transition-all duration-300 shadow-2xl
+            ${status === 'complete' && winner === id ? 'scale-[2.5] shadow-[0_0_80px_#fff] z-20' : 'z-10'}
+            ${status === 'complete' && winner !== id ? 'opacity-0 scale-50' : 'opacity-100'}
+          `}
+        />
+      ))}
+    </div>
+  );
+};
+const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+
+// --- MODULE: SCORECARD ---
+const ScorecardModule = ({ theme, accent, defaultPlayers, templates, setTemplates }) => {
+  const [sessions, setSessions] = useLocalStorage('bgt_sessions', []);
+  const [view, setView] = useState('list');
+  const [activeSessionId, setActiveSessionId] = useState(null);
+  const [setupPlayers, setSetupPlayers] = useState([]);
+  const [setupTemplateId, setSetupTemplateId] = useState('');
+
+  const session = useMemo(() => sessions.find(s => s.id === activeSessionId), [sessions, activeSessionId]);
+  const template = useMemo(() => templates.find(t => t.id === session?.templateId), [templates, session]);
+
+  const updateScore = (pId, rIdx, val) => {
+    setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, scores: { ...s.scores, [pId]: { ...s.scores[pId], [rIdx]: val } } } : s));
+  };
+
+  if (view === 'list') return (
+    <div className={`p-6 pt-12 flex flex-col h-full ${theme.text}`}>
+      <div className="flex justify-between items-end mb-8">
+        <div>
+          <h2 className="text-4xl font-black tracking-tighter">History</h2>
+          <p className={`text-xs font-bold uppercase tracking-widest ${theme.subtext} mt-1`}>Your Game Records</p>
+        </div>
+        <button 
+          onClick={() => { setSetupPlayers(defaultPlayers.length ? defaultPlayers : ['', '']); setSetupTemplateId(templates[0]?.id || ''); setView('setup'); }} 
+          style={{ backgroundColor: accent.color }} 
+          className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform"
+        >
+          <Plus />
+        </button>
+      </div>
+
+      <div className="space-y-4 pb-24 overflow-y-auto">
+        {sessions.length === 0 && (
+          <div className={`mt-12 text-center p-12 rounded-3xl border-2 border-dashed ${theme.border} opacity-40`}>
+            <TableProperties size={48} className="mx-auto mb-4" />
+            <p className="font-bold">No games recorded yet</p>
+          </div>
+        )}
+        {sessions.map(s => {
+          const t = templates.find(tpl => tpl.id === s.templateId);
+          return (
+            <div key={s.id} onClick={() => { setActiveSessionId(s.id); setView('play'); }} className={`${theme.card} backdrop-blur-md p-5 rounded-[2rem] border ${theme.border} active:scale-[0.98] transition-all`}>
+              <div className="flex justify-between mb-2">
+                <span className="font-black text-lg">{t?.name || 'Deleted Game'}</span>
+                <span className="text-[10px] opacity-40 font-bold uppercase pt-1">{new Date(s.timestamp).toLocaleDateString()}</span>
+              </div>
+              <div className="flex gap-2 overflow-hidden">
+                {s.players.map(p => (
+                  <span key={p.id} className="text-[10px] px-2 py-1 rounded-full bg-white/5 border border-white/5 font-bold uppercase">{p.name}</span>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  if (view === 'setup') return (
+    <div className={`p-6 pt-12 flex flex-col h-full ${theme.text}`}>
+      <div className="flex items-center gap-4 mb-8">
+        <button onClick={() => setView('list')} className={`w-10 h-10 rounded-full ${theme.card} border ${theme.border} flex items-center justify-center`}><ChevronLeft size={20}/></button>
+        <h2 className="text-2xl font-black tracking-tight">New Scorecard</h2>
+      </div>
+      <div className="flex-1 space-y-8 overflow-y-auto pb-8">
+        <div>
+          <label className="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-3 block">Game Template</label>
+          <div className="grid grid-cols-1 gap-2">
+            {templates.map(t => (
+              <button 
+                key={t.id} 
+                onClick={() => setSetupTemplateId(t.id)}
+                className={`p-4 rounded-2xl border text-left transition-all ${setupTemplateId === t.id ? 'border-white bg-white/10' : `${theme.card} ${theme.border}`}`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold">{t.name}</span>
+                  {setupTemplateId === t.id && <Check size={16} />}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] uppercase font-bold tracking-widest opacity-40 mb-3 block">Player Names</label>
+          <div className="space-y-3">
+            {setupPlayers.map((p, i) => (
+              <div key={i} className="flex gap-3">
+                <input 
+                  value={p} 
+                  onChange={e => { const n = [...setupPlayers]; n[i] = e.target.value; setSetupPlayers(n); }} 
+                  placeholder={`Player ${i+1}`} 
+                  className={`flex-1 ${theme.card} backdrop-blur-md p-4 rounded-2xl border ${theme.border} outline-none font-bold`} 
+                />
+                <button onClick={() => setSetupPlayers(setupPlayers.filter((_, idx) => idx !== i))} className="p-2 text-rose-500/60"><Trash2 size={20} /></button>
+              </div>
+            ))}
+            <button onClick={() => setSetupPlayers([...setupPlayers, ''])} className="w-full py-4 border-2 border-dashed border-white/5 rounded-2xl opacity-40 text-xs font-bold uppercase">+ Add Player</button>
+          </div>
+        </div>
+      </div>
+      <button 
+        onClick={() => {
+          const id = Date.now().toString();
+          const players = setupPlayers.filter(p=>p.trim()).map(n => ({ id: Math.random().toString(36).substr(2, 9), name: n }));
+          setSessions(prev => [{ id, templateId: setupTemplateId, timestamp: Date.now(), players, scores: {}, dynamicRows: null }, ...prev]);
+          setActiveSessionId(id); setView('play');
+        }} 
+        style={{ backgroundColor: accent.color }} 
+        className="w-full py-5 rounded-[2rem] font-black text-white text-lg shadow-2xl active:scale-[0.98] transition-transform"
+      >
+        START SCORING
+      </button>
+    </div>
+  );
+
+  if (view === 'play' && session && template) {
+    const activeRows = session.dynamicRows || template.rows;
+    const totals = session.players.map(p => {
+      let sum = 0;
+      activeRows.forEach((_, i) => { const v = session.scores[p.id]?.[i]; if (v && !isNaN(parseFloat(v))) sum += parseFloat(v); });
+      return { id: p.id, total: sum };
+    });
+    const winnerId = template.lowestWins ? totals.sort((a,b)=>a.total-b.total)[0].id : totals.sort((a,b)=>b.total-a.total)[0].id;
+
+    return (
+      <div className={`flex flex-col h-full ${theme.text}`}>
+        <div className={`px-6 pt-12 pb-4 flex items-center justify-between`}>
+          <button onClick={() => setView('list')} className={`w-10 h-10 rounded-full ${theme.card} border ${theme.border} flex items-center justify-center`}><ChevronLeft size={20}/></button>
+          <div className="text-center">
+            <h3 className="font-black text-xl tracking-tighter uppercase">{template.name}</h3>
+            <p className="text-[9px] font-bold opacity-30 tracking-[0.2em]">LIVE SCORECARD</p>
+          </div>
+          <button onClick={() => { if(confirm('Reset scores?')) setSessions(prev => prev.map(s => s.id === activeSessionId ? {...s, scores: {}, dynamicRows: null} : s)); }} className="opacity-40"><RotateCcw size={20} /></button>
+        </div>
+        
+        <div className="flex-1 overflow-auto px-4">
+          <div className={`${theme.card} backdrop-blur-xl border ${theme.border} rounded-[2rem] overflow-hidden`}>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-white/5 bg-white/5">
+                  <th className="p-4 text-left opacity-30 text-[9px] uppercase font-bold tracking-widest">Category</th>
+                  {session.players.map(p => <th key={p.id} className="p-4 text-center border-l border-white/5 font-black text-sm">{p.name}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {activeRows.map((row, rIdx) => (
+                  <tr key={rIdx} className="border-b border-white/5">
+                    <td className="p-4 text-xs font-bold opacity-50 bg-white/[0.02]">{row}</td>
+                    {session.players.map(p => (
+                      <td key={p.id} className="p-0 border-l border-white/5">
+                        <input type="text" inputMode="decimal" value={session.scores[p.id]?.[rIdx] || ''} 
+                          onChange={e => updateScore(p.id, rIdx, e.target.value)}
+                          onBlur={e => updateScore(p.id, rIdx, evaluateMath(e.target.value))}
+                          className="w-full h-16 bg-transparent text-center font-black text-xl outline-none focus:bg-white/[0.03] transition-colors" 
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-white/10">
+                <tr className="font-black">
+                  <td className="p-6 text-xs uppercase tracking-widest opacity-60">Total</td>
+                  {session.players.map(p => (
+                    <td key={p.id} className="p-6 text-center text-2xl border-l border-white/5" style={{ color: p.id === winnerId ? accent.color : 'inherit' }}>
+                      {totals.find(t => t.id === p.id).total}
+                    </td>
+                  ))}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <div className="h-24"></div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+// --- MODULE: SETTINGS ---
+const SettingsModule = ({ theme, accent, themeKey, setThemeKey, setAccentKey, defaultPlayers, setDefaultPlayers, templates, setTemplates }) => {
+  return (
+    <div className={`p-6 pt-12 flex flex-col h-full ${theme.text}`}>
+      <h2 className="text-4xl font-black mb-10 tracking-tighter">Setup</h2>
+      
+      <div className="space-y-10 flex-1 overflow-y-auto pb-32">
+        <section>
+          <div className="flex items-center gap-2 mb-6 opacity-40"><Palette size={16} /><h3 className="text-[10px] uppercase font-black tracking-[0.2em]">Aesthetics</h3></div>
+          <div className="grid grid-cols-5 gap-3 mb-6">
+            {Object.entries(THEMES).map(([k, v]) => (
+              <button 
+                key={k} 
+                onClick={() => setThemeKey(k)} 
+                className={`h-14 rounded-2xl border-2 ${v.bg} flex items-center justify-center transition-all ${themeKey === k ? 'border-white scale-105 shadow-xl' : 'border-transparent opacity-60'}`}
+              >
+                {k === 'light' ? <Sun size={20} className="text-zinc-500" /> : <Moon size={20} className="text-zinc-400" />}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-3">
+            {Object.entries(ACCENTS).map(([k, v]) => (
+              <button 
+                key={k} 
+                onClick={() => setAccentKey(k)} 
+                style={{ backgroundColor: v.color }} 
+                className={`w-full h-12 rounded-2xl flex items-center justify-center transition-all ${accent.color === v.color ? 'ring-4 ring-white/20 scale-105' : 'opacity-80 active:scale-95'}`}
+              >
+                {accent.color === v.color && <Check size={20} className="text-white" />}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <div className="flex items-center gap-2 mb-6 opacity-40"><User size={16} /><h3 className="text-[10px] uppercase font-black tracking-[0.2em]">Defaults</h3></div>
+          <div className="space-y-3">
+            {defaultPlayers.map((p, i) => (
+              <input 
+                key={i} 
+                value={p} 
+                onChange={e => { const n = [...defaultPlayers]; n[i] = e.target.value; setDefaultPlayers(n); }} 
+                placeholder="Name" 
+                className={`w-full ${theme.card} backdrop-blur-md p-4 rounded-2xl border ${theme.border} outline-none font-bold`} 
+              />
+            ))}
+            <button onClick={() => setDefaultPlayers([...defaultPlayers, ''])} className="w-full py-4 border-2 border-dashed border-white/5 rounded-2xl opacity-30 text-[10px] font-bold uppercase">+ Add Slot</button>
+          </div>
+        </section>
+
+        <section className="pt-6">
+          <button onClick={() => { if(confirm('Wipe everything?')) { localStorage.clear(); window.location.reload(); } }} className="w-full py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-[10px] font-black tracking-widest text-rose-500 uppercase">Factory Reset</button>
+        </section>
+      </div>
+    </div>
+  );
+};
+
+// --- APP CORE ---
+const App = () => {
+  const [activeTab, setActiveTab] = useState('dice');
+  const [themeKey, setThemeKey] = useLocalStorage('bgt_theme', 'oled');
+  const [accentKey, setAccentKey] = useLocalStorage('bgt_accent', 'indigo');
+  const [defaultPlayers, setDefaultPlayers] = useLocalStorage('bgt_players', ['P1', 'P2']);
+  const [templates, setTemplates] = useLocalStorage('bgt_templates', [
+    { id: '1', name: 'Board Game', rows: ['Victory Points'], lowestWins: false, allowAddingRows: true },
+    { id: '2', name: 'Strategy', rows: ['Board', 'Tech', 'Bonus'], lowestWins: false, allowAddingRows: false }
+  ]);
+
+  const theme = THEMES[themeKey] || THEMES.oled;
+  const accent = ACCENTS[accentKey] || ACCENTS.indigo;
+
+  return (
+    <div className={`h-screen w-screen flex flex-col ${theme.bg} ${theme.text} font-sans overflow-hidden fixed inset-0 selection:bg-indigo-500/30`}>
+      {/* Dynamic Background Glow */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] blur-[120px] rounded-full opacity-20 pointer-events-none" style={{ backgroundColor: accent.color }}></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] blur-[100px] rounded-full opacity-10 pointer-events-none" style={{ backgroundColor: accent.color }}></div>
+
+      <main className="flex-1 relative z-10">
+        <div className={`absolute inset-0 ${activeTab === 'dice' ? 'block' : 'hidden'}`}>
+          <DiceModule theme={theme} accent={accent} />
+        </div>
+        <div className={`absolute inset-0 ${activeTab === 'selector' ? 'block' : 'hidden'}`}>
+          <FirstPlayerModule isActive={activeTab === 'selector'} theme={theme} accent={accent} />
+        </div>
+        <div className={`absolute inset-0 ${activeTab === 'scores' ? 'block' : 'hidden'}`}>
+          <ScorecardModule isActive={activeTab === 'scores'} theme={theme} accent={accent} defaultPlayers={defaultPlayers} templates={templates} setTemplates={setTemplates} />
+        </div>
+        <div className={`absolute inset-0 ${activeTab === 'settings' ? 'block' : 'hidden'}`}>
+          <SettingsModule theme={theme} accent={accent} themeKey={themeKey} setThemeKey={setThemeKey} setAccentKey={setAccentKey} defaultPlayers={defaultPlayers} setDefaultPlayers={setDefaultPlayers} templates={templates} setTemplates={setTemplates} />
+        </div>
+      </main>
+
+      {/* Floating Glass Navigation */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-[100]">
+        <nav className={`${theme.glass} backdrop-blur-2xl border ${theme.border} h-20 rounded-[2.5rem] flex justify-around items-center px-4 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.5)]`}>
+          {[
+            { id: 'dice', icon: Dices, label: 'Dice' },
+            { id: 'selector', icon: Hand, label: 'Start' },
+            { id: 'scores', icon: TableProperties, label: 'Score' },
+            { id: 'settings', icon: Settings, label: 'Setup' }
+          ].map(tab => (
+            <button 
+              key={tab.id} 
+              onClick={() => { setActiveTab(tab.id); triggerHaptic(5); }} 
+              className={`flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all duration-300 ${activeTab === tab.id ? 'scale-110' : 'opacity-40 grayscale'}`}
+              style={{ 
+                color: activeTab === tab.id ? accent.color : 'inherit',
+                backgroundColor: activeTab === tab.id ? 'rgba(255,255,255,0.05)' : 'transparent'
+              }}
+            >
+              <tab.icon size={22} strokeWidth={activeTab === tab.id ? 2.5 : 2} />
+              <span className="text-[8px] font-black uppercase tracking-[0.15em]">{tab.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        input[type="number"]::-webkit-inner-spin-button { display: none; }
+        * { -webkit-tap-highlight-color: transparent; }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.2; } }
+      `}} />
+    </div>
+  );
+};
+
+export default App;
