@@ -79,7 +79,7 @@
         .quick-die.active {
             color: white;
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+            box-shadow: 0 10px 24px rgba(0,0,0,0.2);
         }
         .dice-burst {
             position: absolute;
@@ -357,7 +357,9 @@
             document.querySelectorAll('.quick-die').forEach(btn => {
                 const isActive = parseInt(btn.dataset.faces, 10) === faces;
                 btn.classList.toggle('active', isActive);
-                btn.style.backgroundColor = isActive ? ACCENTS[state.accent] : '';
+                btn.style.backgroundColor = '';
+                btn.style.borderColor = isActive ? ACCENTS[state.accent] : '';
+                btn.style.boxShadow = isActive ? `inset 0 0 0 1px ${ACCENTS[state.accent]}` : '';
             });
         }
 
@@ -492,7 +494,6 @@
         function quickRoll(f){
             document.getElementById('dice-faces').value = f;
             setQuickDieActive(f);
-            rollDice();
         }
 
         // --- FIRST PLAYER ---
