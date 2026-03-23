@@ -22,6 +22,83 @@
         .fade-out { opacity: 0; transform: scale(0.5); }
         .score-input:focus { background: rgba(255,255,255,0.05); }
         .hide-scroll::-webkit-scrollbar { display: none; }
+        .dice-stage {
+            position: relative;
+            overflow: hidden;
+            border-radius: 2rem;
+            background: radial-gradient(circle at 20% 10%, rgba(255,255,255,0.12), transparent 45%), linear-gradient(160deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.1);
+            min-height: 220px;
+        }
+        .dice-stage::after {
+            content: '';
+            position: absolute;
+            inset: auto -20% -65% -20%;
+            height: 120px;
+            background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%);
+            opacity: 0.35;
+            pointer-events: none;
+        }
+        .die {
+            width: 74px;
+            height: 74px;
+            border-radius: 1.25rem;
+            background: linear-gradient(145deg, rgba(255,255,255,0.98), rgba(232,232,232,0.96));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 14px 26px rgba(0,0,0,0.45);
+            color: #111827;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+        .die.rolling {
+            animation: die-roll 520ms cubic-bezier(0.18, 0.8, 0.2, 1) both;
+        }
+        .die-value {
+            font-size: 1.7rem;
+            letter-spacing: -0.03em;
+        }
+        .die-face {
+            width: 46px;
+            height: 46px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            place-items: center;
+        }
+        .pip {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #111827;
+            opacity: 0;
+        }
+        .pip.on { opacity: 1; }
+        .quick-die.active {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+        }
+        .dice-burst {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            pointer-events: none;
+            animation: sparkle 600ms ease-out forwards;
+        }
+        @keyframes die-roll {
+            0% { transform: rotate(0deg) scale(0.75); filter: blur(1px); }
+            40% { transform: rotate(180deg) scale(1.08); filter: blur(0.6px); }
+            70% { transform: rotate(300deg) scale(0.97); filter: blur(0.2px); }
+            100% { transform: rotate(360deg) scale(1); filter: blur(0); }
+        }
+        @keyframes sparkle {
+            0% { transform: translate(0,0) scale(1); opacity: 0.9; }
+            100% { transform: translate(var(--x), var(--y)) scale(0.2); opacity: 0; }
+        }
     </style>
 </head>
 <body class="bg-black text-white">
@@ -33,32 +110,57 @@
         
         <!-- DICE TAB -->
         <div id="dice" class="tab-content active p-6 pt-12">
-            <div id="dice-history-view">
-                <div class="flex justify-between items-end mb-8">
+            <div class="mb-6">
+                <div class="flex items-end justify-between mb-2">
                     <h2 class="text-4xl font-black tracking-tighter">Dice</h2>
+                    <button onclick="toggleDiceStats(true)" class="glass bg-white/5 border border-white/10 px-4 py-2 rounded-2xl text-[10px] uppercase tracking-widest font-black active:scale-95 transition-all">Stats</button>
                 </div>
-
-                <div id="dice-history-list" class="space-y-3"></div>
+                <p id="dice-roll-meta" class="text-[10px] uppercase tracking-widest opacity-40 font-black">Ready to roll</p>
             </div>
 
-            <div class="grid grid-cols-4 gap-3 mb-6">
-                <button onclick="quickRoll(6)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-90 transition-all">d6</button>
-                <button onclick="quickRoll(8)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-90 transition-all">d8</button>
-                <button onclick="quickRoll(12)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-90 transition-all">d12</button>
-                <button onclick="quickRoll(20)" class="glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-90 transition-all">d20</button>
+            <div class="dice-stage p-5 mb-5">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-[10px] uppercase tracking-[0.2em] opacity-50 font-black">Dice Tray</p>
+                    <p id="dice-total" class="text-sm font-black opacity-60">Total: 0</p>
+                </div>
+                <div id="dice-results" class="flex flex-wrap justify-center gap-3 mt-3 relative z-10"></div>
+                <div id="dice-empty-state" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40">
+                    <div class="text-4xl mb-2">🎲</div>
+                    <p class="text-[11px] uppercase tracking-[0.22em] font-black">Shake the table</p>
+                </div>
             </div>
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="glass bg-white/5 rounded-2xl p-4 border border-white/10">
+
+            <div class="grid grid-cols-4 gap-3 mb-5">
+                <button onclick="quickRoll(6)" data-faces="6" class="quick-die glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-90 transition-all">d6</button>
+                <button onclick="quickRoll(8)" data-faces="8" class="quick-die glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-90 transition-all">d8</button>
+                <button onclick="quickRoll(12)" data-faces="12" class="quick-die glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-90 transition-all">d12</button>
+                <button onclick="quickRoll(20)" data-faces="20" class="quick-die glass bg-white/5 p-4 rounded-2xl border border-white/10 font-bold active:scale-90 transition-all">d20</button>
+            </div>
+
+            <div class="glass bg-white/5 rounded-[1.6rem] p-4 border border-white/10 mb-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
                     <label class="block text-[10px] uppercase tracking-widest opacity-40 mb-1 font-bold">Qty</label>
                     <input id="dice-qty" type="number" value="1" min="1" class="w-full bg-transparent text-3xl font-black outline-none">
-                </div>
-                <div class="glass bg-white/5 rounded-2xl p-4 border border-white/10">
+                    </div>
+                    <div>
                     <label class="block text-[10px] uppercase tracking-widest opacity-40 mb-1 font-bold">Faces</label>
-                    <input id="dice-faces" type="number" value="6" min="2" class="w-full bg-transparent text-3xl font-black outline-none">
+                    <input id="dice-faces" type="number" value="6" min="2" oninput="setQuickDieActive(parseInt(this.value, 10) || 0)" class="w-full bg-transparent text-3xl font-black outline-none">
+                    </div>
                 </div>
             </div>
             <button id="roll-btn" onclick="rollDice()" class="accent-bg w-full py-5 rounded-3xl text-xl font-black text-white shadow-xl active:scale-95 transition-all">ROLL DICE</button>
-            <div id="dice-results" class="flex flex-wrap justify-center gap-4 mt-12"></div>
+        </div>
+        <div id="dice-stats-modal" class="hidden fixed inset-0 z-[120] bg-black/70 p-6">
+            <div class="max-w-md mx-auto mt-10 glass bg-zinc-900/80 border border-white/10 rounded-[2rem] p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-black uppercase tracking-[0.2em] opacity-80">Roll Stats</h3>
+                    <button onclick="toggleDiceStats(false)" class="w-9 h-9 rounded-full glass bg-white/5 border border-white/10 flex items-center justify-center">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+                <div id="dice-stats-list" class="space-y-2 max-h-[55vh] overflow-y-auto hide-scroll"></div>
+            </div>
         </div>
 
         <!-- FIRST PLAYER TAB -->
@@ -206,7 +308,8 @@
             
             // Transient state
             activeSessionId: null,
-            editorRows: ['Victory Points']
+            editorRows: ['Victory Points'],
+            diceStats: []
         };
 
         const sync = () => {
@@ -245,30 +348,152 @@
             document.getElementById('bg-glow-2').style.backgroundColor = acc;
             document.querySelectorAll('.accent-bg').forEach(el => el.style.backgroundColor = acc);
             document.querySelectorAll('.accent-text').forEach(el => el.style.color = acc);
+            setQuickDieActive(parseInt(document.getElementById('dice-faces')?.value, 10) || 0);
             switchTab(state.activeTab);
         }
 
         // --- DICE ---
+        function setQuickDieActive(faces) {
+            document.querySelectorAll('.quick-die').forEach(btn => {
+                const isActive = parseInt(btn.dataset.faces, 10) === faces;
+                btn.classList.toggle('active', isActive);
+                btn.style.backgroundColor = isActive ? ACCENTS[state.accent] : '';
+            });
+        }
+
+        function createPippedFace(value) {
+            const face = document.createElement('div');
+            face.className = 'die-face';
+            const activeIndexesByValue = {
+                1: [4],
+                2: [0, 8],
+                3: [0, 4, 8],
+                4: [0, 2, 6, 8],
+                5: [0, 2, 4, 6, 8],
+                6: [0, 2, 3, 5, 6, 8]
+            };
+            const active = activeIndexesByValue[value] || [];
+            for(let i = 0; i < 9; i++) {
+                const pip = document.createElement('span');
+                pip.className = `pip ${active.includes(i) ? 'on' : ''}`;
+                face.appendChild(pip);
+            }
+            return face;
+        }
+
+        function renderDieValue(die, faces, value) {
+            die.innerHTML = '';
+            if(faces === 6) die.appendChild(createPippedFace(value));
+            else {
+                const label = document.createElement('div');
+                label.className = 'die-value';
+                label.innerText = value;
+                die.appendChild(label);
+            }
+        }
+
+        function setDiceMeta(total, qty, faces) {
+            document.getElementById('dice-total').innerText = `Total: ${total}`;
+            document.getElementById('dice-roll-meta').innerText = `${qty}d${faces}`;
+            document.getElementById('dice-empty-state').style.display = qty > 0 ? 'none' : 'flex';
+        }
+
+        function renderDiceStats() {
+            const list = document.getElementById('dice-stats-list');
+            if(!state.diceStats.length) {
+                list.innerHTML = `<div class="p-8 border border-dashed border-white/10 rounded-2xl text-center opacity-40 text-[10px] uppercase tracking-widest font-black">No rolls yet</div>`;
+                return;
+            }
+            list.innerHTML = state.diceStats.slice().reverse().map(r => `
+                <div class="glass bg-white/5 border border-white/10 rounded-2xl p-3 flex items-center justify-between">
+                    <div>
+                        <div class="text-[10px] uppercase tracking-[0.18em] opacity-40 font-black">${r.dice}</div>
+                        <div class="text-xs font-black opacity-70">[${r.values.join(', ')}]</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] uppercase tracking-[0.18em] opacity-40 font-black">Total</div>
+                        <div class="text-2xl font-black leading-none">${r.total}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleDiceStats(open) {
+            const modal = document.getElementById('dice-stats-modal');
+            modal.classList.toggle('hidden', !open);
+            if(open) renderDiceStats();
+        }
+
+        function burstDiceStage() {
+            const stage = document.querySelector('.dice-stage');
+            const acc = ACCENTS[state.accent];
+            for(let i = 0; i < 14; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dice-burst';
+                dot.style.backgroundColor = acc;
+                dot.style.left = '50%';
+                dot.style.top = '50%';
+                dot.style.setProperty('--x', `${(Math.random() - 0.5) * 220}px`);
+                dot.style.setProperty('--y', `${(Math.random() - 0.5) * 180}px`);
+                stage.appendChild(dot);
+                setTimeout(() => dot.remove(), 700);
+            }
+        }
+
         function rollDice() {
-            const qty = parseInt(document.getElementById('dice-qty').value) || 1;
-            const faces = parseInt(document.getElementById('dice-faces').value) || 6;
+            const qtyInput = document.getElementById('dice-qty');
+            const facesInput = document.getElementById('dice-faces');
+            const qty = Math.max(1, Math.min(20, parseInt(qtyInput.value, 10) || 1));
+            const faces = Math.max(2, Math.min(100, parseInt(facesInput.value, 10) || 6));
+            qtyInput.value = qty;
+            facesInput.value = faces;
             const container = document.getElementById('dice-results');
             const btn = document.getElementById('roll-btn');
+            const stage = document.querySelector('.dice-stage');
+            setQuickDieActive(faces);
             triggerHaptic(20); btn.disabled = true; btn.style.opacity = '0.4';
+            stage.style.transform = 'scale(0.985)';
+            setTimeout(() => stage.style.transform = '', 220);
+
+            container.innerHTML = '';
+            const dice = [];
+            for(let i = 0; i < qty; i++) {
+                const die = document.createElement('div');
+                die.className = 'die rolling';
+                container.appendChild(die);
+                dice.push(die);
+            }
+
             let count = 0;
+            let finalValues = [];
             const itv = setInterval(() => {
-                container.innerHTML = '';
-                for(let i=0; i<qty; i++){
+                let runningTotal = 0;
+                const frameValues = [];
+                dice.forEach(die => {
                     const val = Math.floor(Math.random() * faces) + 1;
-                    const die = document.createElement('div');
-                    die.className = 'w-16 h-16 rounded-2xl glass bg-white/5 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg';
-                    die.innerText = val;
-                    container.appendChild(die);
+                    frameValues.push(val);
+                    runningTotal += val;
+                    renderDieValue(die, faces, val);
+                });
+                finalValues = frameValues;
+                setDiceMeta(runningTotal, qty, faces);
+                if(++count > 9) {
+                    clearInterval(itv);
+                    burstDiceStage();
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    triggerHaptic([35, 20, 35]);
+                    dice.forEach(die => die.classList.remove('rolling'));
+                    const total = finalValues.reduce((acc, v) => acc + v, 0);
+                    state.diceStats.push({ dice: `${qty}d${faces}`, total, values: finalValues });
                 }
-                if(++count > 10){ clearInterval(itv); btn.disabled = false; btn.style.opacity = '1'; triggerHaptic(50); }
-            }, 60);
+            }, 70);
         }
-        function quickRoll(f){ document.getElementById('dice-faces').value = f; rollDice(); }
+        function quickRoll(f){
+            document.getElementById('dice-faces').value = f;
+            setQuickDieActive(f);
+            rollDice();
+        }
 
         // --- FIRST PLAYER ---
         let activePointers = {};
@@ -508,7 +733,11 @@
         function setAccent(k) { state.accent = k; applyTheme(); renderSetupElements(); localStorage.setItem('bgt_accent', k); }
         function factoryReset() { if(confirm('Wipe all board game data?')) { localStorage.clear(); window.location.reload(); } }
 
-        window.onload = applyTheme;
+        window.onload = () => {
+            applyTheme();
+            setQuickDieActive(parseInt(document.getElementById('dice-faces').value, 10) || 6);
+            setDiceMeta(0, 0, 0);
+        };
 
         // --- PWA REGISTRATION ---
         if ('serviceWorker' in navigator) {
