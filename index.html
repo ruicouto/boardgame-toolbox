@@ -89,6 +89,14 @@
             pointer-events: none;
             animation: sparkle 600ms ease-out forwards;
         }
+        .nav-btn {
+            flex: 1 1 0%;
+            min-width: 0;
+            border-radius: 1.2rem;
+        }
+        .nav-btn.nav-active {
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+        }
         @keyframes die-roll {
             0% { transform: rotate(0deg) scale(0.75); filter: blur(1px); }
             40% { transform: rotate(180deg) scale(1.08); filter: blur(0.6px); }
@@ -272,21 +280,21 @@
     </div>
 
     <!-- Navigation -->
-    <div class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-[100]">
-        <nav class="glass bg-zinc-900/60 border border-white/10 h-20 rounded-[2.5rem] flex justify-around items-center px-4 shadow-2xl">
-            <button onclick="switchTab('dice')" class="nav-btn flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all" data-tab="dice">
+    <div class="fixed left-1/2 -translate-x-1/2 w-[92%] max-w-md z-[100]" style="bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));">
+        <nav class="glass bg-zinc-900/60 border border-white/10 h-[72px] rounded-[2rem] flex items-center gap-2 px-2 shadow-2xl">
+            <button onclick="switchTab('dice')" class="nav-btn flex flex-col items-center justify-center gap-1.5 px-2 py-2 transition-all" data-tab="dice">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M12 8h.01"/><path d="M8 12h.01"/><path d="M16 12h.01"/><path d="M12 16h.01"/></svg>
                 <span class="text-[8px] font-black uppercase tracking-widest">Dice</span>
             </button>
-            <button onclick="switchTab('selector')" class="nav-btn flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all" data-tab="selector">
+            <button onclick="switchTab('selector')" class="nav-btn flex flex-col items-center justify-center gap-1.5 px-2 py-2 transition-all" data-tab="selector">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
                 <span class="text-[8px] font-black uppercase tracking-widest">Pick</span>
             </button>
-            <button onclick="switchTab('scores')" class="nav-btn flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all" data-tab="scores">
+            <button onclick="switchTab('scores')" class="nav-btn flex flex-col items-center justify-center gap-1.5 px-2 py-2 transition-all" data-tab="scores">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
                 <span class="text-[8px] font-black uppercase tracking-widest">Score</span>
             </button>
-            <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center gap-1.5 px-4 py-2 rounded-2xl transition-all" data-tab="settings">
+            <button onclick="switchTab('settings')" class="nav-btn flex flex-col items-center justify-center gap-1.5 px-2 py-2 transition-all" data-tab="settings">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.72l-.22-.39a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                 <span class="text-[8px] font-black uppercase tracking-widest">Settings</span>
             </button>
@@ -328,9 +336,12 @@
             
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 const isActive = btn.dataset.tab === tabId;
-                btn.style.opacity = isActive ? '1' : '0.4';
-                btn.style.color = isActive ? ACCENTS[state.accent] : 'inherit';
-                btn.classList.toggle('scale-105', isActive);
+                const acc = ACCENTS[state.accent];
+                btn.style.opacity = isActive ? '1' : '0.5';
+                btn.style.color = isActive ? '#ffffff' : 'inherit';
+                btn.style.backgroundColor = isActive ? (acc + '26') : 'transparent';
+                btn.classList.toggle('nav-active', isActive);
+                btn.classList.toggle('scale-105', false);
             });
 
             if(tabId === 'scores') showScoreHistory();
