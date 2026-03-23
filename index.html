@@ -13,6 +13,11 @@
     <style>
         body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; overscroll-behavior: none; overflow: hidden; position: fixed; width: 100%; height: 100%; }
         .glass { backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); }
+        :root { --surface-radius: 1.25rem; }
+        /* Make the app feel consistent: unify radii on surface-like "glass" elements.
+           Keep round avatars/buttons intact via `rounded-full` class. */
+        .glass:not(.rounded-full) { border-radius: var(--surface-radius) !important; }
+        .accent-bg { border-radius: var(--surface-radius) !important; }
         input[type="number"]::-webkit-inner-spin-button { display: none; }
         * { -webkit-tap-highlight-color: transparent; outline: none; }
         .tab-content { display: none; height: 100%; width: 100%; overflow-y: auto; padding-bottom: 140px; }
@@ -92,7 +97,7 @@
         .nav-btn {
             flex: 1 1 0%;
             min-width: 0;
-            border-radius: 1.2rem;
+            border-radius: 0.95rem;
         }
         .nav-btn.nav-active {
             box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
@@ -250,7 +255,7 @@
                 <section class="mb-10">
                     <h3 class="text-[10px] uppercase font-black tracking-widest opacity-40 mb-4">Visual Theme</h3>
                     <div class="grid grid-cols-4 gap-3 mb-4" id="theme-grid"></div>
-                    <div class="flex gap-3" id="accent-grid"></div>
+                    <div class="grid grid-cols-4 gap-3" id="accent-grid"></div>
                 </section>
 
                 <button onclick="factoryReset()" class="w-full py-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-[10px] font-black tracking-widest text-rose-500 uppercase">Factory Reset</button>
@@ -281,9 +286,15 @@
 
     <!-- Navigation -->
     <div class="fixed left-1/2 -translate-x-1/2 w-[92%] max-w-md z-[100]" style="bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));">
-        <nav class="glass bg-zinc-900/60 border border-white/10 h-[72px] rounded-[2rem] flex items-center gap-2 px-2 shadow-2xl">
+        <nav class="glass bg-zinc-900/60 border border-white/10 h-[72px] rounded-[1.5rem] flex items-center gap-2 px-2 shadow-2xl">
             <button onclick="switchTab('dice')" class="nav-btn flex flex-col items-center justify-center gap-1.5 px-2 py-2 transition-all" data-tab="dice">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M12 8h.01"/><path d="M8 12h.01"/><path d="M16 12h.01"/><path d="M12 16h.01"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="8" width="9" height="9" rx="2"></rect>
+                    <rect x="12" y="4" width="9" height="9" rx="2"></rect>
+                    <circle cx="7.5" cy="12.5" r="0.7" fill="currentColor" stroke="none"></circle>
+                    <circle cx="16.5" cy="8.5" r="0.7" fill="currentColor" stroke="none"></circle>
+                    <circle cx="18.8" cy="10.8" r="0.7" fill="currentColor" stroke="none"></circle>
+                </svg>
                 <span class="text-[8px] font-black uppercase tracking-widest">Dice</span>
             </button>
             <button onclick="switchTab('selector')" class="nav-btn flex flex-col items-center justify-center gap-1.5 px-2 py-2 transition-all" data-tab="selector">
@@ -594,7 +605,7 @@
         function renderTemplatePickerGrid() {
             const grid = document.getElementById('scores-template-grid');
             grid.innerHTML = state.templates.map(t => `
-                <div onclick="startNewGameFromTemplate('${t.id}')" class="glass bg-white/5 p-5 rounded-[2rem] border border-white/10 active:scale-95 transition-all flex flex-col items-center justify-center text-center gap-2">
+                <div onclick="startNewGameFromTemplate('${t.id}')" class="glass bg-white/5 p-5 rounded-xl border border-white/10 active:scale-95 transition-all flex flex-col items-center justify-center text-center gap-2">
                     <div class="text-[10px] font-black uppercase tracking-[0.2em] opacity-30">Game</div>
                     <div class="font-black text-sm uppercase tracking-tight">${t.name}</div>
                 </div>
@@ -604,11 +615,11 @@
         function renderHistoryList() {
             const list = document.getElementById('scores-history-list');
             if(!state.sessions.length) {
-                list.innerHTML = `<div class="p-12 border-2 border-dashed border-white/5 rounded-[2rem] text-center opacity-30 text-xs font-black uppercase">No Recent Sessions</div>`;
+                list.innerHTML = `<div class="p-12 border-2 border-dashed border-white/5 rounded-xl text-center opacity-30 text-xs font-black uppercase">No Recent Sessions</div>`;
                 return;
             }
             list.innerHTML = state.sessions.map(s => `
-                <div onclick="resumeSession('${s.id}')" class="glass bg-white/5 p-5 rounded-[2rem] border border-white/10 active:scale-95 transition-all flex justify-between items-center">
+                <div onclick="resumeSession('${s.id}')" class="glass bg-white/5 p-5 rounded-xl border border-white/10 active:scale-95 transition-all flex justify-between items-center">
                     <div class="truncate pr-4">
                         <div class="font-black text-sm truncate">${s.name}</div>
                         <div class="text-[10px] opacity-40 font-bold uppercase tracking-widest mt-0.5">${new Date(s.timestamp).toLocaleDateString()} • ${s.players.length} Players</div>
@@ -709,9 +720,9 @@
             `).join('');
             // Themes
             const tGrid = document.getElementById('theme-grid');
-            tGrid.innerHTML = Object.entries(THEMES).map(([k, v]) => `<button onclick="setTheme('${k}')" class="h-10 rounded-xl border-2 transition-all ${state.theme === k ? 'border-white' : 'border-transparent opacity-40'}" style="background-color: ${v}"></button>`).join('');
+            tGrid.innerHTML = Object.entries(THEMES).map(([k, v]) => `<button onclick="setTheme('${k}')" class="w-10 h-10 mx-auto rounded-full border-2 transition-all ${state.theme === k ? 'border-white' : 'border-transparent opacity-40'}" style="background-color: ${v}"></button>`).join('');
             const aGrid = document.getElementById('accent-grid');
-            aGrid.innerHTML = Object.entries(ACCENTS).map(([k, v]) => `<button onclick="setAccent('${k}')" class="flex-1 h-10 rounded-xl border-2 transition-all ${state.accent === k ? 'border-white' : 'border-transparent opacity-40'}" style="background-color: ${v}"></button>`).join('');
+            aGrid.innerHTML = Object.entries(ACCENTS).map(([k, v]) => `<button onclick="setAccent('${k}')" class="w-10 h-10 mx-auto rounded-full border-2 transition-all ${state.accent === k ? 'border-white' : 'border-transparent opacity-40'}" style="background-color: ${v}"></button>`).join('');
         }
 
         function showTemplateEditor() {
